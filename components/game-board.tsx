@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface GameBoardProps {
-  grid: (string | null)[][]
-  onCellClick: (row: number, col: number) => void
-  isActive: boolean
+  grid: (string | null)[][];
+  onCellClick: (row: number, col: number) => void;
+  isActive: boolean;
 }
 
 export function GameBoard({ grid, onCellClick, isActive }: GameBoardProps) {
@@ -35,7 +35,9 @@ export function GameBoard({ grid, onCellClick, isActive }: GameBoardProps) {
         )}
       </div>
 
-      <div className="text-xs text-muted-foreground">Сетка 5×5 • Центральное слово: БАЛДА</div>
+      <div className="text-xs text-muted-foreground">
+        Сетка 5×5 • Центральное слово: БАЛДА
+      </div>
     </div>
-  )
+  );
 }

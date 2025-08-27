@@ -1,111 +1,120 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Mic, MicOff, Volume2 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { useState, useEffect, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Mic, MicOff, Volume2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface SpeechRecognitionProps {
-  onWordDetected: (word: string, fullText: string) => void
-  isActive: boolean
-  currentTeam: number
+  onWordDetected: (word: string, fullText: string) => void;
+  isActive: boolean;
+  currentTeam: number;
 }
 
-export function SpeechRecognition({ onWordDetected, isActive, currentTeam }: SpeechRecognitionProps) {
-  const [isListening, setIsListening] = useState(false)
-  const [transcript, setTranscript] = useState("")
-  const [lastWord, setLastWord] = useState("")
-  const [error, setError] = useState("")
-  const recognitionRef = useRef<any | null>(null)
+export function SpeechRecognition({
+  onWordDetected,
+  isActive,
+  currentTeam,
+}: SpeechRecognitionProps) {
+  const [isListening, setIsListening] = useState(false);
+  const [transcript, setTranscript] = useState("");
+  const [lastWord, setLastWord] = useState("");
+  const [error, setError] = useState("");
+  const recognitionRef = useRef<any | null>(null);
 
   useEffect(() => {
-    // Check if browser supports speech recognition
-    if (typeof window !== "undefined") {
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
-      if (SpeechRecognition) {
-        recognitionRef.current = new SpeechRecognition()
-        recognitionRef.current.continuous = true
-        recognitionRef.current.interimResults = true
-        recognitionRef.current.lang = "ru-RU" // Russian language
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = true;
+      recognitionRef.current.lang = "ru-RU";
 
-        recognitionRef.current.onstart = () => {
-          console.log("[v0] Speech recognition started")
-          setIsListening(true)
-          setError("")
-        }
+      recognitionRef.current.onstart = () => {
+        setIsListening(true);
+        setError("");
+      };
 
-        recognitionRef.current.onresult = (event) => {
-          let finalTranscript = ""
-          let interimTranscript = ""
+      recognitionRef.current.onresult = (event) => {
+        let finalTranscript = "";
+        let interimTranscript = "";
 
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript
-            if (event.results[i].isFinal) {
-              finalTranscript += transcript
-            } else {
-              interimTranscript += transcript
-            }
-          }
-
-          const fullTranscript = finalTranscript || interimTranscript
-          setTranscript(fullTranscript)
-
-          if (finalTranscript) {
-            console.log("[v0] Final transcript:", finalTranscript)
-            // Extract the last word from the transcript
-            const words = finalTranscript.trim().split(/\s+/)
-            const detectedWord = words[words.length - 1].toUpperCase()
-            setLastWord(detectedWord)
-            onWordDetected(detectedWord, finalTranscript)
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const t = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            finalTranscript += t;
+          } else {
+            interimTranscript += t;
           }
         }
 
-        recognitionRef.current.onerror = (event) => {
-          console.log("[v0] Speech recognition error:", event.error)
-          setError(`Ошибка распознавания: ${event.error}`)
-          setIsListening(false)
-        }
+        const fullTranscript = finalTranscript || interimTranscript;
+        setTranscript(fullTranscript);
 
-        recognitionRef.current.onend = () => {
-          console.log("[v0] Speech recognition ended")
-          setIsListening(false)
+        if (finalTranscript) {
+          const words = finalTranscript.trim().split(/\s+/);
+          const detectedWord = words[words.length - 1].toUpperCase();
+          setLastWord(detectedWord);
+          onWordDetected(detectedWord, finalTranscript);
         }
-      } else {
-        setError("Браузер не поддерживает распознавание речи")
-      }
+      };
+
+      recognitionRef.current.onerror = (event) => {
+        setError(`Ошибка распознавания: ${event.error}`);
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+    } else {
+      setError("Браузер не поддерживает распознавание речи");
     }
 
     return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop()
-      }
-    }
-  }, [onWordDetected])
+      if (recognitionRef.current) recognitionRef.current.stop();
+    };
+  }, [onWordDetected]);
 
   const startListening = () => {
     if (recognitionRef.current && !isListening) {
-      setTranscript("")
-      setLastWord("")
-      setError("")
-      recognitionRef.current.start()
+      setTranscript("");
+      setLastWord("");
+      setError("");
+      recognitionRef.current.start();
     }
-  }
+  };
 
   const stopListening = () => {
     if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop()
+      recognitionRef.current.stop();
     }
-  }
+  };
 
   const toggleListening = () => {
     if (isListening) {
-      stopListening()
+      stopListening();
     } else {
-      startListening()
+      startListening();
     }
-  }
+  };
+
+  // 🚀 обработка пробела
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space" && isActive && !error) {
+        e.preventDefault(); // чтобы не скроллил страницу
+        toggleListening();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isListening, isActive, error]);
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -128,28 +137,42 @@ export function SpeechRecognition({ onWordDetected, isActive, currentTeam }: Spe
               isListening && "animate-pulse scale-110",
             )}
           >
-            {isListening ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
+            {isListening ? (
+              <MicOff className="w-8 h-8" />
+            ) : (
+              <Mic className="w-8 h-8" />
+            )}
           </Button>
         </div>
 
         <div className="text-center space-y-2">
-          <Badge variant={isListening ? "default" : "outline"} className="text-sm">
-            {isListening ? "Слушаю..." : "Нажмите для записи"}
+          <Badge
+            variant={isListening ? "default" : "outline"}
+            className="text-sm"
+          >
+            {isListening ? "Слушаю..." : "Нажмите или пробел"}
           </Badge>
-
-          {!isActive && <p className="text-xs text-muted-foreground">Дождитесь своего хода</p>}
+          {!isActive && (
+            <p className="text-xs text-muted-foreground">
+              Дождитесь своего хода
+            </p>
+          )}
         </div>
 
         {transcript && (
           <div className="p-3 bg-muted rounded-lg">
-            <div className="text-xs text-muted-foreground mb-1">Распознанный текст:</div>
+            <div className="text-xs text-muted-foreground mb-1">
+              Распознанный текст:
+            </div>
             <div className="text-sm">{transcript}</div>
           </div>
         )}
 
         {lastWord && (
           <div className="p-3 bg-primary/10 rounded-lg border border-primary/20">
-            <div className="text-xs text-muted-foreground mb-1">Последнее слово:</div>
+            <div className="text-xs text-muted-foreground mb-1">
+              Последнее слово:
+            </div>
             <div className="text-lg font-bold text-primary">{lastWord}</div>
           </div>
         )}
@@ -161,9 +184,9 @@ export function SpeechRecognition({ onWordDetected, isActive, currentTeam }: Spe
         )}
 
         <div className="text-xs text-muted-foreground text-center">
-          Говорите четко на русском языке. Система выделит последнее произнесенное слово.
+          Можно нажать <b>Пробел</b> или кнопку для старта/стопа записи.
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

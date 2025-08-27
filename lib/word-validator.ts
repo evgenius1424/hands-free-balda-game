@@ -135,14 +135,21 @@ export function validateRussianNoun(word: string): boolean {
 
   // Basic check for Russian characters and reasonable length
   const russianPattern = /^[А-Я]+$/;
-  return russianPattern.test(upperWord) && upperWord.length >= 3 && upperWord.length <= 10;
+  return (
+    russianPattern.test(upperWord) &&
+    upperWord.length >= 3 &&
+    upperWord.length <= 10
+  );
 }
 
 /**
  * Finds all valid placements for a given word on the current grid state.
  * This is a core function of the game logic.
  */
-export function findWordPlacements(word: string, grid: (string | null)[][]): WordPlacement[] {
+export function findWordPlacements(
+  word: string,
+  grid: (string | null)[][],
+): WordPlacement[] {
   const placements: WordPlacement[] = [];
   const upperWord = BaldaGame._normalize(word);
   const R = grid.length;
@@ -187,12 +194,19 @@ export function findWordPlacements(word: string, grid: (string | null)[][]): Wor
  * A private helper function that finds a path for a word on the board.
  * This function uses a Depth-First Search (DFS) algorithm.
  */
-function findPath(word: string, board: (string | null)[][], designatedCell: Cell, designatedIndex: number): Cell[] | null {
+function findPath(
+  word: string,
+  board: (string | null)[][],
+  designatedCell: Cell,
+  designatedIndex: number,
+): Cell[] | null {
   const R = board.length;
   const C = board[0].length;
   const dr = [-1, 1, 0, 0];
   const dc = [0, 0, -1, 1];
-  const visited: boolean[][] = Array.from({ length: R }, () => Array<boolean>(C).fill(false));
+  const visited: boolean[][] = Array.from({ length: R }, () =>
+    Array<boolean>(C).fill(false),
+  );
   const path: Cell[] = [];
 
   const inBounds = (r: number, c: number) => r >= 0 && r < R && c >= 0 && c < C;
@@ -211,7 +225,9 @@ function findPath(word: string, board: (string | null)[][], designatedCell: Cell
 
     if (posIndex === word.length - 1) {
       // Found the full word. Check if the new letter was used.
-      const usedNewLetter = path.some(p => p.r === designatedCell.r && p.c === designatedCell.c);
+      const usedNewLetter = path.some(
+        (p) => p.r === designatedCell.r && p.c === designatedCell.c,
+      );
       if (usedNewLetter) return true;
     }
 
@@ -247,9 +263,13 @@ function findPath(word: string, board: (string | null)[][], designatedCell: Cell
   return null;
 }
 
-export function applyWordPlacement(grid: (string | null)[][], placement: WordPlacement): (string | null)[][] {
+export function applyWordPlacement(
+  grid: (string | null)[][],
+  placement: WordPlacement,
+): (string | null)[][] {
   const newGrid = grid.map((row) => [...row]);
-  newGrid[placement.newLetterPos.r][placement.newLetterPos.c] = placement.newLetter;
+  newGrid[placement.newLetterPos.r][placement.newLetterPos.c] =
+    placement.newLetter;
   return newGrid;
 }
 
@@ -263,15 +283,17 @@ export class BaldaGame {
   public startWord: string;
 
   constructor(startWord: string, size = 5) {
-    if (!startWord || typeof startWord !== 'string') {
-      throw new Error('startWord must be a non-empty string');
+    if (!startWord || typeof startWord !== "string") {
+      throw new Error("startWord must be a non-empty string");
     }
     const normalizedStartWord = BaldaGame._normalize(startWord);
     if (size < normalizedStartWord.length || size % 2 === 0) {
-      throw new Error('size must be odd and >= startWord.length');
+      throw new Error("size must be odd and >= startWord.length");
     }
 
-    this.board = Array.from({ length: size }, () => Array<string | null>(size).fill(null));
+    this.board = Array.from({ length: size }, () =>
+      Array<string | null>(size).fill(null),
+    );
     this.usedWords = new Set<string>();
     this.startWord = normalizedStartWord;
 
@@ -286,7 +308,7 @@ export class BaldaGame {
   public findWordPlacements(word: string): WordPlacement[] {
     const placements = findWordPlacements(word, this.board);
     // Filter out words that are already used.
-    return placements.filter(p => !this.usedWords.has(p.word));
+    return placements.filter((p) => !this.usedWords.has(p.word));
   }
 
   /**
@@ -296,7 +318,10 @@ export class BaldaGame {
   public isValidMove(word: string, placedCell: Cell): boolean {
     if (this.usedWords.has(BaldaGame._normalize(word))) return false;
     const placements = findWordPlacements(word, this.board);
-    return placements.some(p => p.newLetterPos.r === placedCell.r && p.newLetterPos.c === placedCell.c);
+    return placements.some(
+      (p) =>
+        p.newLetterPos.r === placedCell.r && p.newLetterPos.c === placedCell.c,
+    );
   }
 
   /**
@@ -304,10 +329,14 @@ export class BaldaGame {
    */
   public applyMove(word: string, placedCell: Cell): boolean {
     const placements = this.findWordPlacements(word);
-    const validPlacement = placements.find(p => p.newLetterPos.r === placedCell.r && p.newLetterPos.c === placedCell.c);
+    const validPlacement = placements.find(
+      (p) =>
+        p.newLetterPos.r === placedCell.r && p.newLetterPos.c === placedCell.c,
+    );
 
     if (validPlacement) {
-      this.board[validPlacement.newLetterPos.r][validPlacement.newLetterPos.c] = validPlacement.newLetter;
+      this.board[validPlacement.newLetterPos.r][validPlacement.newLetterPos.c] =
+        validPlacement.newLetter;
       this.usedWords.add(validPlacement.word);
       return true;
     }
@@ -316,7 +345,9 @@ export class BaldaGame {
 
   private _placeStartWordInMiddle(): void {
     const row = Math.floor(this.board.length / 2);
-    const startOffset = Math.floor((this.board.length - this.startWord.length) / 2);
+    const startOffset = Math.floor(
+      (this.board.length - this.startWord.length) / 2,
+    );
     for (let i = 0; i < this.startWord.length; i++) {
       this.board[row][startOffset + i] = this.startWord[i];
     }
@@ -330,7 +361,9 @@ export class BaldaGame {
 
   // For debugging
   public boardToString(): string {
-    return this.board.map(row => row.map(ch => (ch || '.')).join(' ')).join('\n');
+    return this.board
+      .map((row) => row.map((ch) => ch || ".").join(" "))
+      .join("\n");
   }
 }
 
