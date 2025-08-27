@@ -38,7 +38,7 @@ export function SpeechRecognition({
         setError("");
       };
 
-      recognitionRef.current.onresult = (event) => {
+      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
         let finalTranscript = "";
         let interimTranscript = "";
 
@@ -62,7 +62,7 @@ export function SpeechRecognition({
         }
       };
 
-      recognitionRef.current.onerror = (event) => {
+      recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
         setError(`Ошибка распознавания: ${event.error}`);
         setIsListening(false);
       };
