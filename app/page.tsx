@@ -16,14 +16,11 @@ import {
 
 export default function BaldaGame() {
   const [gameGrid, setGameGrid] = useState<(string | null)[][]>(() => {
-    // Initialize 5x5 grid with center word "БАЛДА"
     const grid = Array(5)
       .fill(null)
       .map(() => Array(5).fill(null));
     const centerWord = ["Б", "А", "Л", "Д", "А"];
-    centerWord.forEach((letter, index) => {
-      grid[2][index] = letter; // Place in middle row
-    });
+    centerWord.forEach((letter, index) => (grid[2][index] = letter));
     return grid;
   });
 
@@ -41,19 +38,12 @@ export default function BaldaGame() {
   const [wordPlacements, setWordPlacements] = useState<WordPlacement[]>([]);
   const [usedWords, setUsedWords] = useState<Set<string>>(new Set(["БАЛДА"]));
 
-  const handleCellClick = (row: number, col: number) => {
-    console.log(`[v0] Cell clicked: ${row}, ${col}`);
-    // TODO: Handle cell selection for word placement
-  };
-
   const handleTimerEnd = () => {
-    console.log(`[v0] Timer ended for team ${currentTeam}`);
-    // Clear current word attempt
+    console.log(`Timer ended for team ${currentTeam}`);
     setCurrentWord("");
     setWordPlacements([]);
-    // Switch to other team
     setCurrentTeam(currentTeam === 1 ? 2 : 1);
-    setTimeLeft(120); // Reset timer
+    setTimeLeft(120);
   };
 
   const startGame = () => {
@@ -62,27 +52,24 @@ export default function BaldaGame() {
   };
 
   const handleWordDetected = (word: string, fullText: string) => {
-    console.log(`[v0] Word detected: ${word}, Full text: ${fullText}`);
+    console.log(`Word detected: ${word}, Full text: ${fullText}`);
 
     const upperWord = word.toUpperCase().trim();
 
-    // Check if word was already used
     if (usedWords.has(upperWord)) {
-      console.log(`[v0] Word already used: ${upperWord}`);
+      console.log(`Word already used: ${upperWord}`);
       return;
     }
 
-    // Validate the word
     const isValid = validateRussianNoun(upperWord);
     setIsWordValid(isValid);
     setCurrentWord(upperWord);
 
     if (isValid) {
-      // Find possible placements
       const placements = findWordPlacements(upperWord, gameGrid);
       setWordPlacements(placements);
       console.log(
-        `[v0] Found ${placements.length} possible placements for ${upperWord}`,
+        `Found ${placements.length} possible placements for ${upperWord}`,
       );
     } else {
       setWordPlacements([]);
@@ -90,13 +77,11 @@ export default function BaldaGame() {
   };
 
   const handlePlacementSelect = (placement: WordPlacement) => {
-    console.log(`[v0] Placing word: ${placement.word}`);
+    console.log(`Placing word: ${placement.word}`);
 
-    // Apply the placement to the grid
     const newGrid = applyWordPlacement(gameGrid, placement);
     setGameGrid(newGrid);
 
-    // Update score
     const points = placement.word.length;
     if (currentTeam === 1) {
       setTeamScores((prev) => ({ ...prev, team1: prev.team1 + points }));
@@ -104,20 +89,18 @@ export default function BaldaGame() {
       setTeamScores((prev) => ({ ...prev, team2: prev.team2 + points }));
     }
 
-    // Add word to used words
     setUsedWords((prev) => new Set([...prev, placement.word]));
 
-    // Clear current word and switch turns
     setCurrentWord("");
     setWordPlacements([]);
     setCurrentTeam(currentTeam === 1 ? 2 : 1);
-    setTimeLeft(120); // Reset timer for next team
+    setTimeLeft(120);
 
-    console.log(`[v0] Word placed successfully. Score: ${points} points`);
+    console.log(`Word placed successfully. Score: ${points} points`);
   };
 
   const handleWordReject = () => {
-    console.log(`[v0] Word rejected: ${currentWord}`);
+    console.log(`Word rejected: ${currentWord}`);
     setCurrentWord("");
     setWordPlacements([]);
   };
@@ -154,11 +137,7 @@ export default function BaldaGame() {
           {/* Game Board */}
           <div className="order-1 lg:order-2">
             <Card className="p-6 shadow-lg">
-              <GameBoard
-                grid={gameGrid}
-                onCellClick={handleCellClick}
-                isActive={isGameActive}
-              />
+              <GameBoard grid={gameGrid} isActive={isGameActive} />
             </Card>
           </div>
 

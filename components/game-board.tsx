@@ -5,11 +5,10 @@ import { cn } from "@/lib/utils";
 
 interface GameBoardProps {
   grid: (string | null)[][];
-  onCellClick: (row: number, col: number) => void;
   isActive: boolean;
 }
 
-export function GameBoard({ grid, onCellClick, isActive }: GameBoardProps) {
+export function GameBoard({ grid, isActive }: GameBoardProps) {
   return (
     <div className="flex flex-col items-center space-y-4">
       <h2 className="text-2xl font-bold text-primary">Игровое поле</h2>
@@ -26,7 +25,6 @@ export function GameBoard({ grid, onCellClick, isActive }: GameBoardProps) {
                 cell ? "bg-primary text-primary-foreground" : "bg-background",
                 !isActive && "cursor-not-allowed opacity-50",
               )}
-              onClick={() => isActive && onCellClick(rowIndex, colIndex)}
               disabled={!isActive}
             >
               {cell || ""}

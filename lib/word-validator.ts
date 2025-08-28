@@ -1,111 +1,3 @@
-// Basic Russian dictionary of common nouns (simplified for demo)
-const RUSSIAN_NOUNS = new Set([
-  "БАЛДА",
-  "СЛОВО",
-  "ИГРА",
-  "ДЕЛО",
-  "ВРЕМЯ",
-  "МЕСТО",
-  "РУКА",
-  "НОГА",
-  "ГОЛОВА",
-  "ГЛАЗ",
-  "ДЕНЬ",
-  "НОЧЬ",
-  "УТРО",
-  "ВЕЧЕР",
-  "ДОРОГА",
-  "ДОМА",
-  "СТОЛ",
-  "СТУЛ",
-  "ОКНО",
-  "ДВЕРЬ",
-  "ВОДА",
-  "ОГОНЬ",
-  "ЗЕМЛЯ",
-  "НЕБО",
-  "СОЛНЦЕ",
-  "ЛУНА",
-  "ЗВЕЗДА",
-  "ДЕРЕВО",
-  "ЦВЕТОК",
-  "ТРАВА",
-  "КОШКА",
-  "СОБАКА",
-  "ПТИЦА",
-  "РЫБА",
-  "ЧЕЛОВЕК",
-  "ДРУГ",
-  "СЕМЬЯ",
-  "МАМА",
-  "ПАПА",
-  "ДЕТИ",
-  "КНИГА",
-  "ШКОЛА",
-  "УЧИТЕЛЬ",
-  "УРОК",
-  "РАБОТА",
-  "ДЕНЬГИ",
-  "МАГАЗИН",
-  "ЕДА",
-  "ХЛЕБ",
-  "МОЛОКО",
-  "МАШИНА",
-  "ПОЕЗД",
-  "САМОЛЕТ",
-  "КОРАБЛЬ",
-  "ГОРОД",
-  "СЕЛО",
-  "УЛИЦА",
-  "ПАРК",
-  "ТЕАТР",
-  "КИНО",
-  "МУЗЫКА",
-  "ПЕСНЯ",
-  "ТАНЕЦ",
-  "СПОРТ",
-  "ФУТБОЛ",
-  "ХОККЕЙ",
-  "ТЕННИС",
-  "ПЛАВАНИЕ",
-  "БЕГ",
-  "ПРЫЖОК",
-  "ЗИМА",
-  "ВЕСНА",
-  "ЛЕТО",
-  "ОСЕНЬ",
-  "СНЕГ",
-  "ДОЖДЬ",
-  "ВЕТЕР",
-  "ТУМАН",
-  "РАДУГА",
-  "ГРОЗА",
-  "КРАСОТА",
-  "ЛЮБОВЬ",
-  "СЧАСТЬЕ",
-  "РАДОСТЬ",
-  "ПЕЧАЛЬ",
-  "СТРАХ",
-  "НАДЕЖДА",
-  "МЕЧТА",
-  "ЦЕЛЬ",
-  "УСПЕХ",
-]);
-
-// Names and toponyms that should be rejected
-const INVALID_WORDS = new Set([
-  "МОСКВА",
-  "РОССИЯ",
-  "ПЕТР",
-  "АННА",
-  "ИВАН",
-  "МАРИЯ",
-  "АЛЕКСАНДР",
-  "ЕЛЕНА",
-  "СЕРГЕЙ",
-  "ОЛЬГА",
-]);
-
 export interface Cell {
   r: number;
   c: number;
@@ -122,24 +14,12 @@ export interface WordPlacement {
 /**
  * Validates a word as a potential Russian noun for the game.
  * Checks against a list of valid nouns and rejected proper nouns.
+ *
+ * TODO: Integrate with a real dictionary API or database.
  */
 export function validateRussianNoun(word: string): boolean {
-  const upperWord = word.toUpperCase().trim();
-
-  if (INVALID_WORDS.has(upperWord)) {
-    return false;
-  }
-  if (RUSSIAN_NOUNS.has(upperWord)) {
-    return true;
-  }
-
-  // Basic check for Russian characters and reasonable length
   const russianPattern = /^[А-Я]+$/;
-  return (
-    russianPattern.test(upperWord) &&
-    upperWord.length >= 3 &&
-    upperWord.length <= 10
-  );
+  return russianPattern.test(word.toUpperCase().trim());
 }
 
 /**
@@ -273,17 +153,13 @@ export function applyWordPlacement(
   return newGrid;
 }
 
-/**
- * Public API is now a class to manage game state, as in the LLM's contract.
- * The public functions from your original code are re-implemented here.
- */
 export class BaldaGame {
   public board: (string | null)[][];
   public usedWords: Set<string>;
   public startWord: string;
 
   constructor(startWord: string, size = 5) {
-    if (!startWord || typeof startWord !== "string") {
+    if (!startWord) {
       throw new Error("startWord must be a non-empty string");
     }
     const normalizedStartWord = BaldaGame._normalize(startWord);
@@ -301,48 +177,6 @@ export class BaldaGame {
     this.usedWords.add(normalizedStartWord);
   }
 
-  /**
-   * Find and return all valid placements for a word.
-   * This is a reimplementation of your `findWordPlacements` function.
-   */
-  public findWordPlacements(word: string): WordPlacement[] {
-    const placements = findWordPlacements(word, this.board);
-    // Filter out words that are already used.
-    return placements.filter((p) => !this.usedWords.has(p.word));
-  }
-
-  /**
-   * Checks if a word is a valid move.
-   * This uses the core findPath logic to verify a single move.
-   */
-  public isValidMove(word: string, placedCell: Cell): boolean {
-    if (this.usedWords.has(BaldaGame._normalize(word))) return false;
-    const placements = findWordPlacements(word, this.board);
-    return placements.some(
-      (p) =>
-        p.newLetterPos.r === placedCell.r && p.newLetterPos.c === placedCell.c,
-    );
-  }
-
-  /**
-   * Apply a valid move.
-   */
-  public applyMove(word: string, placedCell: Cell): boolean {
-    const placements = this.findWordPlacements(word);
-    const validPlacement = placements.find(
-      (p) =>
-        p.newLetterPos.r === placedCell.r && p.newLetterPos.c === placedCell.c,
-    );
-
-    if (validPlacement) {
-      this.board[validPlacement.newLetterPos.r][validPlacement.newLetterPos.c] =
-        validPlacement.newLetter;
-      this.usedWords.add(validPlacement.word);
-      return true;
-    }
-    return false;
-  }
-
   private _placeStartWordInMiddle(): void {
     const row = Math.floor(this.board.length / 2);
     const startOffset = Math.floor(
@@ -353,7 +187,6 @@ export class BaldaGame {
     }
   }
 
-  // A helper to normalize words (uppercase, no whitespace)
   public static _normalize(s: string): string {
     if (!s) return s;
     return s.toUpperCase().trim();
@@ -366,5 +199,3 @@ export class BaldaGame {
       .join("\n");
   }
 }
-
-export default BaldaGame;
