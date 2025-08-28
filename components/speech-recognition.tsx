@@ -65,17 +65,28 @@ export function SpeechRecognition({
       recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
         setError(`Ошибка распознавания: ${event.error}`);
         setIsListening(false);
+
+        if (isActive) {
+          recognitionRef.current.stop();
+          recognitionRef.current.start();
+          setIsListening(true);
+        }
       };
 
       recognitionRef.current.onend = () => {
         setIsListening(false);
+
+        if (isActive) {
+          recognitionRef.current.start();
+          setIsListening(true);
+        }
       };
     } else {
       setError("Браузер не поддерживает распознавание речи");
     }
 
     return () => {
-      if (recognitionRef.current) recognitionRef.current.stop();
+      recognitionRef.current?.abort();
     };
   }, [onWordDetected]);
 
@@ -102,7 +113,6 @@ export function SpeechRecognition({
     }
   };
 
-  // 🚀 обработка пробела
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space" && isActive && !error) {
@@ -177,11 +187,11 @@ export function SpeechRecognition({
           </div>
         )}
 
-        {error && (
-          <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
-            <div className="text-sm text-destructive">{error}</div>
-          </div>
-        )}
+        {/*{error && (*/}
+        {/*  <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">*/}
+        {/*    <div className="text-sm text-destructive">{error}</div>*/}
+        {/*  </div>*/}
+        {/*)}*/}
 
         <div className="text-xs text-muted-foreground text-center">
           Можно нажать <b>Пробел</b> или кнопку для старта/стопа записи.

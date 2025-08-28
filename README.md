@@ -1,30 +1,18 @@
-# Hands-Free Balda Game
+# 🎮 Hands-Free Balda (Word Game)
 
-_Automatically synced with your [v0.app](https://v0.app) deployments_
+A modern **web version of the classic Russian word game “Balda”** — reimagined as a **couch party game with voice
+control**.  
+Two teams compete against each other by adding letters to the board and forming words.  
+No keyboard needed — just a voice.
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/learnbefore/v0-hands-free-balda-game)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/projects/MJnbIjD4rPY)
 
-## Overview
+---
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+## ✨ Features
 
-## Deployment
+- 🗣️ **Voice-controlled gameplay** — hands-free experience using speech recognition.
+- 👥 **Team mode** — two teams compete against each other with a built-in timer.
+- ⏱️ **Turn timer** — automatically switches turns between teams.
+- 🤖 **Smart word placement** — a computer checks validity and places the word on the board.
+- 📱 **Web-based** — runs directly in the browser, no installation required.
 
-Your project is live at:
-
-**[https://vercel.com/learnbefore/v0-hands-free-balda-game](https://vercel.com/learnbefore/v0-hands-free-balda-game)**
-
-## Build your app
-
-Continue building your app on:
-
-**[https://v0.app/chat/projects/MJnbIjD4rPY](https://v0.app/chat/projects/MJnbIjD4rPY)**
-
-## How It Works
-
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
