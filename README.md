@@ -5,7 +5,6 @@ control**.
 Two teams compete against each other by adding letters to the board and forming words.  
 No keyboard needed — just a voice.
 
-
 ---
 
 ## ✨ Features
@@ -15,4 +14,3 @@ No keyboard needed — just a voice.
 - ⏱️ **Turn timer** — automatically switches turns between teams.
 - 🤖 **Smart word placement** — a computer checks validity and places the word on the board.
 - 📱 **Web-based** — runs directly in the browser, no installation required.
-

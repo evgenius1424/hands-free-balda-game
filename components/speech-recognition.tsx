@@ -1,11 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Mic, MicOff, Volume2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Volume2 } from "lucide-react";
 
 interface SpeechRecognitionProps {
   onWordDetected: (word: string, fullText: string) => void;
@@ -23,108 +21,105 @@ export function SpeechRecognition({
   const [lastWord, setLastWord] = useState("");
   const [error, setError] = useState("");
   const recognitionRef = useRef<any | null>(null);
+  const restartTimeout = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = "ru-RU";
+    if (!SpeechRecognition) {
+      setError("Браузер не поддерживает распознавание речи");
+      return;
+    }
 
-      recognitionRef.current.onstart = () => {
-        setIsListening(true);
-        setError("");
-      };
+    recognitionRef.current = new SpeechRecognition();
+    recognitionRef.current.continuous = true;
+    recognitionRef.current.interimResults = true;
+    recognitionRef.current.lang = "ru-RU";
 
-      recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-        let finalTranscript = "";
-        let interimTranscript = "";
+    recognitionRef.current.onstart = () => {
+      setIsListening(true);
+      setError("");
+    };
 
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const t = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalTranscript += t;
-          } else {
-            interimTranscript += t;
-          }
+    recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
+      let finalTranscript = "";
+      let interimTranscript = "";
+
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += t;
+        } else {
+          interimTranscript += t;
         }
+      }
 
-        const fullTranscript = finalTranscript || interimTranscript;
-        setTranscript(fullTranscript);
+      const fullTranscript = (finalTranscript || interimTranscript).trim();
+      setTranscript(fullTranscript);
 
-        if (finalTranscript) {
-          const words = finalTranscript.trim().split(/\s+/);
+      if (fullTranscript) {
+        if (debounceTimer.current) clearTimeout(debounceTimer.current);
+
+        // ✅ Debounce detection to wait a little for more words
+        debounceTimer.current = setTimeout(() => {
+          const words = fullTranscript.split(/\s+/);
           const detectedWord = words[words.length - 1].toUpperCase();
           setLastWord(detectedWord);
-          onWordDetected(detectedWord, finalTranscript);
-        }
-      };
-
-      recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
-        setError(`Ошибка распознавания: ${event.error}`);
-        setIsListening(false);
-
-        if (isActive) {
-          recognitionRef.current.stop();
-          recognitionRef.current.start();
-          setIsListening(true);
-        }
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-
-        if (isActive) {
-          recognitionRef.current.start();
-          setIsListening(true);
-        }
-      };
-    } else {
-      setError("Браузер не поддерживает распознавание речи");
-    }
-
-    return () => {
-      recognitionRef.current?.abort();
-    };
-  }, [onWordDetected]);
-
-  const startListening = () => {
-    if (recognitionRef.current && !isListening) {
-      setTranscript("");
-      setLastWord("");
-      setError("");
-      recognitionRef.current.start();
-    }
-  };
-
-  const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
-    }
-  };
-
-  const toggleListening = () => {
-    if (isListening) {
-      stopListening();
-    } else {
-      startListening();
-    }
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.code === "Space" && isActive && !error) {
-        e.preventDefault(); // чтобы не скроллил страницу
-        toggleListening();
+          onWordDetected(detectedWord, fullTranscript);
+        }, 800); // wait ~0.8s after last speech activity
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+
+    recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
+      setError(`Ошибка распознавания: ${event.error}`);
+      setIsListening(false);
+      scheduleRestart();
     };
-  }, [isListening, isActive, error]);
+
+    recognitionRef.current.onend = () => {
+      setIsListening(false);
+      scheduleRestart();
+    };
+
+    if (isActive) {
+      startListening();
+    }
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.onstart = null;
+        recognitionRef.current.onresult = null;
+        recognitionRef.current.onerror = null;
+        recognitionRef.current.onend = null;
+        recognitionRef.current.abort();
+      }
+      if (restartTimeout.current) {
+        clearTimeout(restartTimeout.current);
+      }
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, [onWordDetected, isActive]);
+
+  const startListening = () => {
+    try {
+      recognitionRef.current?.start();
+    } catch (e) {
+      // Ignore if already started
+    }
+  };
+
+  const scheduleRestart = () => {
+    if (!isActive) return;
+    if (restartTimeout.current) {
+      clearTimeout(restartTimeout.current);
+    }
+    restartTimeout.current = setTimeout(() => {
+      startListening();
+    }, 500);
+  };
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -136,31 +131,12 @@ export function SpeechRecognition({
       </CardHeader>
 
       <CardContent className="space-y-4">
-        <div className="text-center">
-          <Button
-            onClick={toggleListening}
-            disabled={!isActive || !!error}
-            size="lg"
-            variant={isListening ? "destructive" : "default"}
-            className={cn(
-              "w-20 h-20 rounded-full transition-all duration-300",
-              isListening && "animate-pulse scale-110",
-            )}
-          >
-            {isListening ? (
-              <MicOff className="w-8 h-8" />
-            ) : (
-              <Mic className="w-8 h-8" />
-            )}
-          </Button>
-        </div>
-
         <div className="text-center space-y-2">
           <Badge
             variant={isListening ? "default" : "outline"}
             className="text-sm"
           >
-            {isListening ? "Слушаю..." : "Нажмите или пробел"}
+            {isListening ? "Слушаю..." : "Ожидание"}
           </Badge>
           {!isActive && (
             <p className="text-xs text-muted-foreground">
@@ -187,14 +163,14 @@ export function SpeechRecognition({
           </div>
         )}
 
-        {/*{error && (*/}
-        {/*  <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">*/}
-        {/*    <div className="text-sm text-destructive">{error}</div>*/}
-        {/*  </div>*/}
-        {/*)}*/}
+        {error && (
+          <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
+            <div className="text-sm text-destructive">{error}</div>
+          </div>
+        )}
 
         <div className="text-xs text-muted-foreground text-center">
-          Можно нажать <b>Пробел</b> или кнопку для старта/стопа записи.
+          Постоянный режим прослушивания активирован.
         </div>
       </CardContent>
     </Card>

@@ -30,7 +30,7 @@ export default function BaldaGame() {
     team1: "Команда 1",
     team2: "Команда 2",
   });
-  const [timeLeft, setTimeLeft] = useState(120); // 2 minutes in seconds
+  const [timeLeft, setTimeLeft] = useState(120);
   const [isGameActive, setIsGameActive] = useState(false);
 
   const [currentWord, setCurrentWord] = useState("");
