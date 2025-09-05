@@ -5,7 +5,6 @@ import { GameBoard } from "@/components/game-board";
 import { TeamPanel } from "@/components/team-panel";
 import { GameTimer } from "@/components/game-timer";
 import { SpeechRecognition } from "@/components/speech-recognition";
-import { WordPlacementDisplay } from "@/components/word-placement-display";
 import { Card } from "@/components/ui/card";
 import {
   validateRussianNoun,
@@ -56,6 +55,46 @@ export default function BaldaGame() {
 
     const upperWord = word.toUpperCase().trim();
 
+    // Voice commands for selection/cancel
+    const numberWords: Record<string, number> = {
+      "0": 0,
+      "1": 1,
+      "2": 2,
+      "3": 3,
+      "4": 4,
+      "5": 5,
+      "6": 6,
+      "7": 7,
+      "8": 8,
+      "9": 9,
+      НОЛЬ: 0,
+      ОДИН: 1,
+      РАЗ: 1,
+      ДВА: 2,
+      ПАРА: 2,
+      ТРИ: 3,
+      ЧЕТЫРЕ: 4,
+      ПЯТЬ: 5,
+      ШЕСТЬ: 6,
+      СЕМЬ: 7,
+      ВОСЕМЬ: 8,
+      ДЕВЯТЬ: 9,
+    };
+    const cancelWords = new Set(["ОТМЕНА", "СТОП", "НЕТ", "СБРОС"]);
+
+    if (cancelWords.has(upperWord)) {
+      handleWordReject();
+      return;
+    }
+
+    if (upperWord in numberWords && wordPlacements.length > 0) {
+      const idx = numberWords[upperWord] - 1; // convert to 0-based (ignoring 0)
+      if (idx >= 0 && idx < wordPlacements.length) {
+        handlePlacementSelect(wordPlacements[idx]);
+        return;
+      }
+    }
+
     if (usedWords.has(upperWord)) {
       console.log(`Word already used: ${upperWord}`);
       return;
@@ -66,7 +105,14 @@ export default function BaldaGame() {
     setCurrentWord(upperWord);
 
     if (isValid) {
-      const placements = findWordPlacements(upperWord, gameGrid);
+      const placementsRaw = findWordPlacements(upperWord, gameGrid);
+      const seen = new Set<string>();
+      const placements = placementsRaw.filter((p) => {
+        const key = `${p.newLetterPos.r},${p.newLetterPos.c},${p.newLetter}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
       setWordPlacements(placements);
       console.log(
         `Found ${placements.length} possible placements for ${upperWord}`,
@@ -137,7 +183,12 @@ export default function BaldaGame() {
           {/* Game Board */}
           <div className="order-1 lg:order-2">
             <Card className="p-6 shadow-lg">
-              <GameBoard grid={gameGrid} isActive={isGameActive} />
+              <GameBoard
+                grid={gameGrid}
+                isActive={isGameActive}
+                placementHints={wordPlacements}
+                onHintSelect={handlePlacementSelect}
+              />
             </Card>
           </div>
 
@@ -161,16 +212,6 @@ export default function BaldaGame() {
             isActive={isGameActive && currentTeam !== null}
             currentTeam={currentTeam}
           />
-
-          {currentWord && (
-            <WordPlacementDisplay
-              word={currentWord}
-              isValid={isWordValid}
-              placements={wordPlacements}
-              onPlacementSelect={handlePlacementSelect}
-              onReject={handleWordReject}
-            />
-          )}
         </div>
 
         <div className="mt-8 text-center">

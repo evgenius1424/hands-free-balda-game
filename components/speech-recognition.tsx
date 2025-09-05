@@ -61,18 +61,17 @@ export function SpeechRecognition({
       if (fullTranscript) {
         if (debounceTimer.current) clearTimeout(debounceTimer.current);
 
-        // ✅ Debounce detection to wait a little for more words
         debounceTimer.current = setTimeout(() => {
           const words = fullTranscript.split(/\s+/);
           const detectedWord = words[words.length - 1].toUpperCase();
           setLastWord(detectedWord);
           onWordDetected(detectedWord, fullTranscript);
-        }, 800); // wait ~0.8s after last speech activity
+        }, 1000); // wait ~1s after last speech activity
       }
     };
 
     recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
-      setError(`Ошибка распознавания: ${event.error}`);
+      // setError(`Ошибка распознавания: ${event.error}`);
       setIsListening(false);
       scheduleRestart();
     };
