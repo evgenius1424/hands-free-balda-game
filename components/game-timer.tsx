@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Play, Pause } from "lucide-react";
+import { Pause, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface GameTimerProps {
@@ -19,18 +18,6 @@ export function GameTimer({
   onTimerEnd,
   onStart,
 }: GameTimerProps) {
-  useEffect(() => {
-    if (!isActive || timeLeft <= 0) return;
-
-    const timer = setInterval(() => {
-      if (timeLeft <= 1) {
-        onTimerEnd();
-      }
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft, isActive, onTimerEnd]);
-
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;

@@ -23,10 +23,16 @@ export function SpeechRecognition({
   const recognitionRef = useRef<any | null>(null);
   const restartTimeout = useRef<NodeJS.Timeout | null>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
+  const onWordDetectedRef = useRef(onWordDetected);
+
+  useEffect(() => {
+    onWordDetectedRef.current = onWordDetected;
+  }, [onWordDetected]);
 
   useEffect(() => {
     const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
       setError("Браузер не поддерживает распознавание речи");
       return;
@@ -47,7 +53,7 @@ export function SpeechRecognition({
       let interimTranscript = "";
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
-        const t = event.results[i][0].transcript;
+        const t = (event.results[i] as any)[0].transcript;
         if (event.results[i].isFinal) {
           finalTranscript += t;
         } else {
@@ -65,7 +71,7 @@ export function SpeechRecognition({
           const words = fullTranscript.split(/\s+/);
           const detectedWord = words[words.length - 1].toUpperCase();
           setLastWord(detectedWord);
-          onWordDetected(detectedWord, fullTranscript);
+          onWordDetectedRef.current?.(detectedWord, fullTranscript);
         }, 1000); // wait ~1s after last speech activity
       }
     };
@@ -100,7 +106,7 @@ export function SpeechRecognition({
         clearTimeout(debounceTimer.current);
       }
     };
-  }, [onWordDetected, isActive]);
+  }, [isActive]);
 
   const startListening = () => {
     try {

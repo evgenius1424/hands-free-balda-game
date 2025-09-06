@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { GameBoard } from "@/components/game-board";
 import { TeamPanel } from "@/components/team-panel";
 import { GameTimer } from "@/components/game-timer";
@@ -42,13 +42,27 @@ export default function BaldaGame() {
     setCurrentWord("");
     setWordPlacements([]);
     setCurrentTeam(currentTeam === 1 ? 2 : 1);
-    setTimeLeft(120);
   };
 
   const startGame = () => {
     setIsGameActive(true);
     setTimeLeft(120);
   };
+
+  useEffect(() => {
+    if (!isGameActive) return;
+    const interval = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          handleTimerEnd();
+          return 120;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isGameActive, currentTeam]);
 
   const handleWordDetected = (word: string, fullText: string) => {
     console.log(`Word detected: ${word}, Full text: ${fullText}`);
