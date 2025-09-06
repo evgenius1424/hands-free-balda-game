@@ -11,14 +11,16 @@ import {
   applyWordPlacement,
   type WordPlacement,
 } from "@/lib/word-validator";
+import { getRandomCenterWord } from "@/lib/center-words";
 
 export default function BaldaGame() {
+  const [centerWord] = useState<string>(() => getRandomCenterWord());
   const [gameGrid, setGameGrid] = useState<(string | null)[][]>(() => {
     const grid = Array(5)
       .fill(null)
       .map(() => Array(5).fill(null));
-    const centerWord = ["Б", "А", "Л", "Д", "А"];
-    centerWord.forEach((letter, index) => (grid[2][index] = letter));
+    const letters = centerWord.split("");
+    letters.forEach((letter, index) => (grid[2][index] = letter));
     return grid;
   });
 
@@ -30,7 +32,7 @@ export default function BaldaGame() {
   const [currentWord, setCurrentWord] = useState("");
   const [isWordValid, setIsWordValid] = useState(false);
   const [wordPlacements, setWordPlacements] = useState<WordPlacement[]>([]);
-  const [usedWords, setUsedWords] = useState<Set<string>>(new Set(["БАЛДА"]));
+  const [usedWords, setUsedWords] = useState<Set<string>>(new Set([centerWord]));
 
   const handleTimerEnd = () => {
     console.log(`Timer ended for team ${currentTeam}`);
@@ -186,6 +188,7 @@ export default function BaldaGame() {
               isActive={isGameActive}
               placementHints={wordPlacements}
               onHintSelect={handlePlacementSelect}
+              centerWord={centerWord}
             />
           </Card>
         </div>

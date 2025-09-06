@@ -9,6 +9,7 @@ interface GameBoardProps {
   isActive: boolean;
   placementHints?: WordPlacement[];
   onHintSelect?: (placement: WordPlacement) => void;
+  centerWord?: string;
 }
 
 export function GameBoard({
@@ -16,6 +17,7 @@ export function GameBoard({
   isActive,
   placementHints = [],
   onHintSelect,
+  centerWord,
 }: GameBoardProps) {
   const hintMap: Record<string, { index: number; placement: WordPlacement }> =
     {};
@@ -74,7 +76,7 @@ export function GameBoard({
       </div>
 
       <div className="text-xs text-muted-foreground">
-        Сетка 5×5 • Центральное слово: БАЛДА
+        Сетка 5×5 • Центральное слово: {centerWord || "—"}
       </div>
     </div>
   );
