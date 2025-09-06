@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { GameBoard } from "@/components/game-board";
-import { TeamPanel } from "@/components/team-panel";
-import { GameTimer } from "@/components/game-timer";
+import { GamePanel } from "@/components/game-panel";
 import { SpeechRecognition } from "@/components/speech-recognition";
 import { Card } from "@/components/ui/card";
 import {
@@ -25,10 +24,6 @@ export default function BaldaGame() {
 
   const [currentTeam, setCurrentTeam] = useState<1 | 2>(1);
   const [teamScores, setTeamScores] = useState({ team1: 0, team2: 0 });
-  const [teamNames, setTeamNames] = useState({
-    team1: "Команда 1",
-    team2: "Команда 2",
-  });
   const [timeLeft, setTimeLeft] = useState(120);
   const [isGameActive, setIsGameActive] = useState(false);
 
@@ -167,60 +162,35 @@ export default function BaldaGame() {
 
   return (
     <div className="min-h-screen bg-background p-4">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-primary mb-4">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <div className="text-center">
+          <h1 className="text-3xl md:text-4xl font-bold text-primary mb-6">
             Балда без рук
           </h1>
-          <GameTimer
-            timeLeft={timeLeft}
-            isActive={isGameActive}
-            onTimerEnd={handleTimerEnd}
-            onStart={startGame}
-          />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          {/* Team 1 Panel */}
-          <div className="order-2 lg:order-1">
-            <TeamPanel
-              teamNumber={1}
-              teamName={teamNames.team1}
-              score={teamScores.team1}
-              isActive={currentTeam === 1}
-              onNameChange={(name) =>
-                setTeamNames((prev) => ({ ...prev, team1: name }))
-              }
-            />
-          </div>
+        <GamePanel
+          team1Score={teamScores.team1}
+          team2Score={teamScores.team2}
+          currentTeam={currentTeam}
+          timeLeft={timeLeft}
+          isActive={isGameActive}
+          onTimerEnd={handleTimerEnd}
+          onStart={startGame}
+        />
 
-          {/* Game Board */}
-          <div className="order-1 lg:order-2">
-            <Card className="p-6 shadow-lg">
-              <GameBoard
-                grid={gameGrid}
-                isActive={isGameActive}
-                placementHints={wordPlacements}
-                onHintSelect={handlePlacementSelect}
-              />
-            </Card>
-          </div>
-
-          {/* Team 2 Panel */}
-          <div className="order-3">
-            <TeamPanel
-              teamNumber={2}
-              teamName={teamNames.team2}
-              score={teamScores.team2}
-              isActive={currentTeam === 2}
-              onNameChange={(name) =>
-                setTeamNames((prev) => ({ ...prev, team2: name }))
-              }
+        <div className="flex justify-center">
+          <Card className="p-4 md:p-6 shadow-lg">
+            <GameBoard
+              grid={gameGrid}
+              isActive={isGameActive}
+              placementHints={wordPlacements}
+              onHintSelect={handlePlacementSelect}
             />
-          </div>
+          </Card>
         </div>
 
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="max-w-2xl mx-auto">
           <SpeechRecognition
             onWordDetected={handleWordDetected}
             isActive={isGameActive && currentTeam !== null}
@@ -228,9 +198,9 @@ export default function BaldaGame() {
           />
         </div>
 
-        <div className="mt-8 text-center">
+        <div className="max-w-4xl mx-auto">
           <Card className="p-4 bg-muted">
-            <p className="text-muted-foreground">
+            <p className="text-sm md:text-base text-muted-foreground text-center">
               Добавьте одну букву к существующим словам, чтобы создать новое
               слово. Используйте речевое управление для ввода слов. Очки
               начисляются по длине слова.
