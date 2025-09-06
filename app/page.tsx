@@ -28,11 +28,15 @@ export default function BaldaGame() {
   const [teamScores, setTeamScores] = useState({ team1: 0, team2: 0 });
   const [timeLeft, setTimeLeft] = useState(120);
   const [isGameActive, setIsGameActive] = useState(false);
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [winner, setWinner] = useState<1 | 2 | "draw" | null>(null);
 
   const [currentWord, setCurrentWord] = useState("");
   const [isWordValid, setIsWordValid] = useState(false);
   const [wordPlacements, setWordPlacements] = useState<WordPlacement[]>([]);
-  const [usedWords, setUsedWords] = useState<Set<string>>(new Set([centerWord]));
+  const [usedWords, setUsedWords] = useState<Set<string>>(
+    new Set([centerWord]),
+  );
 
   const handleTimerEnd = () => {
     console.log(`Timer ended for team ${currentTeam}`);
@@ -43,6 +47,8 @@ export default function BaldaGame() {
 
   const startGame = () => {
     setIsGameActive(true);
+    setIsGameOver(false);
+    setWinner(null);
     setTimeLeft(120);
   };
 
@@ -137,19 +143,38 @@ export default function BaldaGame() {
     console.log(`Placing word: ${placement.word}`);
 
     const newGrid = applyWordPlacement(gameGrid, placement);
-    setGameGrid(newGrid);
 
+    // Compute new scores eagerly to be able to decide winner immediately
     const points = placement.word.length;
-    if (currentTeam === 1) {
-      setTeamScores((prev) => ({ ...prev, team1: prev.team1 + points }));
-    } else {
-      setTeamScores((prev) => ({ ...prev, team2: prev.team2 + points }));
-    }
+    const newScores =
+      currentTeam === 1
+        ? { ...teamScores, team1: teamScores.team1 + points }
+        : { ...teamScores, team2: teamScores.team2 + points };
 
+    // Update state
+    setGameGrid(newGrid);
+    setTeamScores(newScores);
     setUsedWords((prev) => new Set([...prev, placement.word]));
 
     setCurrentWord("");
     setWordPlacements([]);
+
+    // Check if board is full (no nulls) => game over
+    const isFull = newGrid.every((row) => row.every((cell) => cell !== null));
+    if (isFull) {
+      // End game: stop activity and announce winner
+      setIsGameActive(false);
+      setIsGameOver(true);
+      if (newScores.team1 > newScores.team2) setWinner(1);
+      else if (newScores.team2 > newScores.team1) setWinner(2);
+      else setWinner("draw");
+      console.log(
+        `Game over. Final score Team1 ${newScores.team1} - Team2 ${newScores.team2}`,
+      );
+      return;
+    }
+
+    // Otherwise continue to next team
     setCurrentTeam(currentTeam === 1 ? 2 : 1);
     setTimeLeft(120);
 
@@ -177,6 +202,8 @@ export default function BaldaGame() {
           currentTeam={currentTeam}
           timeLeft={timeLeft}
           isActive={isGameActive}
+          isGameOver={isGameOver}
+          winner={winner}
           onTimerEnd={handleTimerEnd}
           onStart={startGame}
         />

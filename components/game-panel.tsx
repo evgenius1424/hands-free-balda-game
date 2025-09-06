@@ -12,6 +12,8 @@ interface GamePanelProps {
   currentTeam: 1 | 2;
   timeLeft: number;
   isActive: boolean;
+  isGameOver?: boolean;
+  winner?: 1 | 2 | "draw" | null;
   onTimerEnd: () => void;
   onStart: () => void;
 }
@@ -22,6 +24,8 @@ export function GamePanel({
   currentTeam,
   timeLeft,
   isActive,
+  isGameOver,
+  winner,
   onTimerEnd,
   onStart,
 }: GamePanelProps) {
@@ -92,7 +96,13 @@ export function GamePanel({
           </Button>
 
           <div className="text-center text-xs md:text-sm text-muted-foreground">
-            {isActive ? "Время хода" : "Нажмите старт для начала игры"}
+            {isGameOver
+              ? winner === "draw"
+                ? "Игра окончена. Ничья"
+                : `Игра окончена. Победила команда ${winner}`
+              : isActive
+                ? "Время хода"
+                : "Нажмите старт для начала игры"}
           </div>
         </div>
 
