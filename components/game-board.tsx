@@ -32,7 +32,7 @@ export function GameBoard({
     <div className="flex flex-col items-center space-y-4">
       <h2 className="text-2xl font-bold text-primary">Игровое поле</h2>
 
-      <div className="grid grid-cols-5 gap-2 p-4 bg-card rounded-lg border-2 border-primary/20">
+      <div className="grid grid-cols-5 gap-1 p-2 md:gap-2 md:p-4 bg-card rounded-lg border-2 border-primary/20">
         {grid.map((row, rowIndex) =>
           row.map((cell, colIndex) => {
             const key = `${rowIndex},${colIndex}`;
@@ -44,7 +44,7 @@ export function GameBoard({
                 key={key}
                 variant="outline"
                 className={cn(
-                  "relative w-16 h-16 text-2xl font-bold transition-all duration-200",
+                  "relative w-12 h-12 text-xl md:w-16 md:h-16 md:text-2xl font-bold transition-all duration-200",
                   "hover:bg-primary/10 hover:border-primary/50",
                   cell ? "bg-primary text-primary-foreground" : "bg-background",
                   !isActive && "cursor-not-allowed opacity-50",
@@ -59,13 +59,13 @@ export function GameBoard({
                 <span
                   className={cn(
                     showHint && !cell ? "opacity-60" : "",
-                    "select-none",
+                    "select-none leading-none",
                   )}
                 >
                   {content}
                 </span>
                 {showHint && (
-                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs flex items-center justify-center shadow">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 rounded-full bg-primary text-primary-foreground text-[10px] md:text-xs flex items-center justify-center shadow">
                     {hint.index}
                   </span>
                 )}
