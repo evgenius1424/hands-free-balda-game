@@ -144,14 +144,12 @@ export default function BaldaGame() {
 
     const newGrid = applyWordPlacement(gameGrid, placement);
 
-    // Compute new scores eagerly to be able to decide winner immediately
     const points = placement.word.length;
     const newScores =
       currentTeam === 1
         ? { ...teamScores, team1: teamScores.team1 + points }
         : { ...teamScores, team2: teamScores.team2 + points };
 
-    // Update state
     setGameGrid(newGrid);
     setTeamScores(newScores);
     setUsedWords((prev) => new Set([...prev, placement.word]));
@@ -159,10 +157,8 @@ export default function BaldaGame() {
     setCurrentWord("");
     setWordPlacements([]);
 
-    // Check if board is full (no nulls) => game over
     const isFull = newGrid.every((row) => row.every((cell) => cell !== null));
     if (isFull) {
-      // End game: stop activity and announce winner
       setIsGameActive(false);
       setIsGameOver(true);
       if (newScores.team1 > newScores.team2) setWinner(1);
