@@ -18,6 +18,7 @@ export interface WordPlacement {
  * TODO: Integrate with a real dictionary API or database.
  */
 export function validateRussianNoun(word: string): boolean {
+  if (word.length < 2) return false;
   const russianPattern = /^[А-Я]+$/;
   return russianPattern.test(word.toUpperCase().trim());
 }
