@@ -11,6 +11,13 @@ interface SpeechRecognitionProps {
   currentTeam: number;
 }
 
+// A global interface for the SpeechRecognitionEvent to satisfy TypeScript
+// in different browser environments.
+interface CustomSpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+}
+
 export function SpeechRecognition({
   onWordDetected,
   isActive,
@@ -20,102 +27,146 @@ export function SpeechRecognition({
   const [transcript, setTranscript] = useState("");
   const [lastWord, setLastWord] = useState("");
   const [error, setError] = useState("");
-  const recognitionRef = useRef<any | null>(null);
-  const restartTimeout = useRef<NodeJS.Timeout | null>(null);
-  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
-  const onWordDetectedRef = useRef(onWordDetected);
 
+  // Refs to hold instances and values that shouldn't trigger re-renders
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const transcriptRef = useRef(""); // Use a ref to hold the latest transcript for event handlers
+  const restartTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Ref to hold the latest onWordDetected function to avoid stale closures
+  const onWordDetectedRef = useRef(onWordDetected);
   useEffect(() => {
     onWordDetectedRef.current = onWordDetected;
   }, [onWordDetected]);
 
   useEffect(() => {
-    const SpeechRecognition =
+    const SpeechRecognitionAPI =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
-    if (!SpeechRecognition) {
+
+    if (!SpeechRecognitionAPI) {
       setError("Браузер не поддерживает распознавание речи");
       return;
     }
 
-    recognitionRef.current = new SpeechRecognition();
-    recognitionRef.current.continuous = true;
-    recognitionRef.current.interimResults = true;
-    recognitionRef.current.lang = "ru-RU";
+    recognitionRef.current = new SpeechRecognitionAPI();
+    const recognition = recognitionRef.current;
 
-    recognitionRef.current.onstart = () => {
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "ru-RU";
+    // Limit to the most likely hypothesis
+    // @ts-ignore
+    recognition.maxAlternatives = 1;
+
+    recognition.onstart = () => {
       setIsListening(true);
       setError("");
     };
 
-    recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-      let finalTranscript = "";
+    // This event updates the transcript in real-time.
+    recognition.onresult = (event: Event) => {
+      const speechEvent = event as CustomSpeechRecognitionEvent;
+
+      // Helper to extract the last word robustly (letters/numbers), uppercased
+      const extractLastWord = (text: string) => {
+        const cleaned = text
+          .replace(/[\p{P}\p{S}]+/gu, " ") // remove punctuation/symbols
+          .replace(/\s+/g, " ")
+          .trim();
+        if (!cleaned) return "";
+        const parts = cleaned.split(" ");
+        return (parts[parts.length - 1] || "").toUpperCase();
+      };
+
+      // Build interim transcript for UI responsiveness
       let interimTranscript = "";
 
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const t = (event.results[i] as any)[0].transcript;
-        if (event.results[i].isFinal) {
-          finalTranscript += t;
+      for (let i = speechEvent.resultIndex; i < speechEvent.results.length; i++) {
+        const res = speechEvent.results[i];
+        const text = res[0]?.transcript || "";
+        if (res.isFinal) {
+          const finalText = text.trim();
+          // Update transcript states to the final phrase text
+          setTranscript(finalText);
+          transcriptRef.current = finalText;
+
+          // Detect and emit the last word of the final phrase text
+          const detectedWord = extractLastWord(finalText);
+          if (detectedWord) {
+            setLastWord(detectedWord);
+            onWordDetectedRef.current?.(detectedWord, finalText);
+          }
         } else {
-          interimTranscript += t;
+          interimTranscript += text;
         }
       }
 
-      const fullTranscript = (finalTranscript || interimTranscript).trim();
-      setTranscript(fullTranscript);
-
-      if (fullTranscript) {
-        if (debounceTimer.current) clearTimeout(debounceTimer.current);
-
-        debounceTimer.current = setTimeout(() => {
-          const words = fullTranscript.split(/\s+/);
-          const detectedWord = words[words.length - 1].toUpperCase();
-          setLastWord(detectedWord);
-          onWordDetectedRef.current?.(detectedWord, fullTranscript);
-        }, 1000); // wait ~1s after last speech activity
+      if (interimTranscript) {
+        setTranscript(interimTranscript);
+        // do not update transcriptRef on interim to avoid premature detections
       }
     };
 
-    recognitionRef.current.onerror = (event: SpeechRecognitionErrorEvent) => {
-      // setError(`Ошибка распознавания: ${event.error}`);
+    // Keep onspeechend minimal; primary detection occurs in onresult when results are final.
+    recognition.onspeechend = () => {
+      setIsListening(false);
+      // Let the service end naturally; onend will handle restart if needed.
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      // We only schedule a restart on an actual error to make the service resilient.
+      if (event.error !== "no-speech") {
+        // setError(`Ошибка распознавания: ${event.error}`);
+      }
       setIsListening(false);
       scheduleRestart();
     };
 
-    recognitionRef.current.onend = () => {
+    // This event fires when the recognition service disconnects.
+    // We restart automatically to keep constant listening when active.
+    recognition.onend = () => {
       setIsListening(false);
-      scheduleRestart();
+      if (isActive) {
+        // Small delay helps avoid immediate start errors in some browsers
+        scheduleRestart();
+      }
     };
 
+    // Start listening if the component is active
     if (isActive) {
       startListening();
     }
 
+    // Cleanup function to stop recognition and clear timeouts
     return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.onstart = null;
-        recognitionRef.current.onresult = null;
-        recognitionRef.current.onerror = null;
-        recognitionRef.current.onend = null;
-        recognitionRef.current.abort();
+      if (recognition) {
+        recognition.onstart = null;
+        recognition.onresult = null;
+        recognition.onspeechend = null;
+        recognition.onerror = null;
+        recognition.onend = null;
+        recognition.abort();
       }
       if (restartTimeout.current) {
         clearTimeout(restartTimeout.current);
-      }
-      if (debounceTimer.current) {
-        clearTimeout(debounceTimer.current);
       }
     };
   }, [isActive]);
 
   const startListening = () => {
     try {
+      // Clear previous transcript when starting a new listening session
+      setTranscript("");
+      transcriptRef.current = "";
+      setLastWord("");
       recognitionRef.current?.start();
     } catch (e) {
-      // Ignore if already started
+      // Ignore errors if recognition is already running.
     }
   };
 
+  // Schedules a restart of the speech recognition service ONLY upon error.
   const scheduleRestart = () => {
     if (!isActive) return;
     if (restartTimeout.current) {
@@ -123,7 +174,7 @@ export function SpeechRecognition({
     }
     restartTimeout.current = setTimeout(() => {
       startListening();
-    }, 500);
+    }, 500); // A brief delay before restarting.
   };
 
   return (
