@@ -32,6 +32,7 @@ export function SpeechRecognition({
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const transcriptRef = useRef(""); // Use a ref to hold the latest transcript for event handlers
   const restartTimeout = useRef<NodeJS.Timeout | null>(null);
+  const silenceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   // Ref to hold the latest onWordDetected function to avoid stale closures
   const onWordDetectedRef = useRef(onWordDetected);
@@ -82,7 +83,11 @@ export function SpeechRecognition({
       // Build interim transcript for UI responsiveness
       let interimTranscript = "";
 
-      for (let i = speechEvent.resultIndex; i < speechEvent.results.length; i++) {
+      for (
+        let i = speechEvent.resultIndex;
+        i < speechEvent.results.length;
+        i++
+      ) {
         const res = speechEvent.results[i];
         const text = res[0]?.transcript || "";
         if (res.isFinal) {
@@ -105,6 +110,28 @@ export function SpeechRecognition({
       if (interimTranscript) {
         setTranscript(interimTranscript);
         // do not update transcriptRef on interim to avoid premature detections
+      }
+
+      // Reset silence timer on any new result to hasten phrase finalization after short pause
+      if (silenceTimeout.current) {
+        clearTimeout(silenceTimeout.current);
+      }
+      if (isActive) {
+        silenceTimeout.current = setTimeout(() => {
+          try {
+            recognitionRef.current?.stop();
+          } catch (e) {
+            // ignore if already stopped
+          }
+        }, 900); // shorten end-of-phrase wait to ~0.9s of silence
+      }
+    };
+
+    // Clear silence timeout when speech resumes to avoid stopping mid-utterance
+    // @ts-ignore - some browsers may not have this event typed
+    recognition.onspeechstart = () => {
+      if (silenceTimeout.current) {
+        clearTimeout(silenceTimeout.current);
       }
     };
 
@@ -144,12 +171,17 @@ export function SpeechRecognition({
         recognition.onstart = null;
         recognition.onresult = null;
         recognition.onspeechend = null;
+        // @ts-ignore
+        recognition.onspeechstart = null;
         recognition.onerror = null;
         recognition.onend = null;
         recognition.abort();
       }
       if (restartTimeout.current) {
         clearTimeout(restartTimeout.current);
+      }
+      if (silenceTimeout.current) {
+        clearTimeout(silenceTimeout.current);
       }
     };
   }, [isActive]);
