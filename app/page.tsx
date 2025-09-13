@@ -14,15 +14,19 @@ import {
 import { getRandomCenterWord } from "@/lib/center-words";
 
 export default function BaldaGame() {
-  const [centerWord] = useState<string>(() => getRandomCenterWord());
-  const [gameGrid, setGameGrid] = useState<(string | null)[][]>(() => {
-    const grid = Array(5)
+  const [centerWord, setCenterWord] = useState<string>("");
+  const [isClientMounted, setIsClientMounted] = useState(false);
+
+  useEffect(() => {
+    setIsClientMounted(true);
+    setCenterWord(getRandomCenterWord());
+  }, []);
+
+  const [gameGrid, setGameGrid] = useState<(string | null)[][]>(() =>
+    Array(5)
       .fill(null)
-      .map(() => Array(5).fill(null));
-    const letters = centerWord.split("");
-    letters.forEach((letter, index) => (grid[2][index] = letter));
-    return grid;
-  });
+      .map(() => Array(5).fill(null)),
+  );
 
   const [currentTeam, setCurrentTeam] = useState<1 | 2>(1);
   const [teamScores, setTeamScores] = useState({ team1: 0, team2: 0 });
@@ -34,9 +38,19 @@ export default function BaldaGame() {
   const [currentWord, setCurrentWord] = useState("");
   const [isWordValid, setIsWordValid] = useState(false);
   const [wordPlacements, setWordPlacements] = useState<WordPlacement[]>([]);
-  const [usedWords, setUsedWords] = useState<Set<string>>(
-    new Set([centerWord]),
-  );
+  const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (centerWord) {
+      const grid = Array(5)
+        .fill(null)
+        .map(() => Array(5).fill(null));
+      const letters = centerWord.split("");
+      letters.forEach((letter, index) => (grid[2][index] = letter));
+      setGameGrid(grid);
+      setUsedWords(new Set([centerWord]));
+    }
+  }, [centerWord]);
 
   const handleTimerEnd = () => {
     console.log(`Timer ended for team ${currentTeam}`);
@@ -182,6 +196,20 @@ export default function BaldaGame() {
     setCurrentWord("");
     setWordPlacements([]);
   };
+
+  if (!isClientMounted || !centerWord) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <div className="max-w-6xl mx-auto space-y-8">
+          <div className="text-center">
+            <h1 className="text-3xl md:text-4xl font-bold text-primary mb-6">
+              Балда без рук
+            </h1>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background p-4">
