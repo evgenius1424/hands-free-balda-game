@@ -319,7 +319,7 @@ export default function BaldaGame() {
         {isLandscape && (
           <div className="flex justify-center items-start gap-6 md:gap-10">
             {/* Left panel: Team 1 + Timer */}
-            <div className="flex flex-col gap-4 w-40 md:w-48">
+            <div className="flex flex-col gap-4 w-48 md:w-56 lg:w-64">
               <Card className="p-4">
                 <div className="flex flex-col items-center space-y-2">
                   <div className="flex items-center gap-2">
@@ -372,7 +372,7 @@ export default function BaldaGame() {
             </Card>
 
             {/* Right panel: Team 2 + Speech */}
-            <div className="flex flex-col gap-4 w-40 md:w-48">
+            <div className="flex flex-col gap-4 w-48 md:w-56 lg:w-64">
               <Card className="p-4">
                 <div className="flex flex-col items-center space-y-2">
                   <div className="flex items-center gap-2">
