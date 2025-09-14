@@ -6,9 +6,9 @@ import { SpeechRecognition } from "@/components/speech-recognition";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  validateRussianNoun,
-  findWordPlacements,
   applyWordPlacement,
+  findWordPlacements,
+  validateWord,
   type WordPlacement,
 } from "@/lib/word-validator";
 import { getRandomCenterWord } from "@/lib/center-words";
@@ -143,7 +143,7 @@ export default function BaldaGame() {
       return;
     }
 
-    const isValid = validateRussianNoun(upperWord);
+    const isValid = validateWord(upperWord);
     setIsWordValid(isValid);
     setCurrentWord(upperWord);
 
@@ -238,12 +238,10 @@ export default function BaldaGame() {
           </h1>
         </div>
 
-        {/* Portrait / default layout */}
         {!isLandscape && (
           <>
             <Card className="px-3 py-2">
               <div className="flex items-center justify-between gap-3 h-12">
-                {/* Left: Team 1 compact */}
                 <div className="flex items-center gap-2 min-w-0">
                   <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-xs">
                     1
@@ -260,7 +258,6 @@ export default function BaldaGame() {
                   />
                 </div>
 
-                {/* Center: Timer + small button */}
                 <div className="flex items-center gap-2">
                   <div className="text-2xl font-bold text-primary tabular-nums leading-none min-w-[5ch] text-center">
                     {formatTime(timeLeft)}
@@ -275,7 +272,6 @@ export default function BaldaGame() {
                   </Button>
                 </div>
 
-                {/* Right: Team 2 compact */}
                 <div className="flex items-center gap-2 min-w-0">
                   <span
                     className={`${currentTeam === 2 ? "bg-accent animate-pulse" : "bg-muted-foreground/40"} inline-block w-2.5 h-2.5 rounded-full`}
@@ -360,7 +356,6 @@ export default function BaldaGame() {
               </Card>
             </div>
 
-            {/* Center: Game board */}
             <Card className="p-3 md:p-4 lg:p-6 shadow-lg">
               <GameBoard
                 grid={gameGrid}
@@ -371,7 +366,6 @@ export default function BaldaGame() {
               />
             </Card>
 
-            {/* Right panel: Team 2 + Speech */}
             <div className="flex flex-col gap-4 w-48 md:w-56 lg:w-64">
               <Card className="p-4">
                 <div className="flex flex-col items-center space-y-2">

@@ -11,16 +11,9 @@ export interface WordPlacement {
   path: Cell[];
 }
 
-/**
- * Validates a word as a potential Russian noun for the game.
- * Checks against a list of valid nouns and rejected proper nouns.
- *
- * TODO: Integrate with a real dictionary API or database.
- */
-export function validateRussianNoun(word: string): boolean {
+export function validateWord(word: string): boolean {
   if (word.length < 2) return false;
-  const russianPattern = /^[А-Я]+$/;
-  return russianPattern.test(word.toUpperCase().trim());
+  return /^[А-ЯA-Z]+$/.test(word.toUpperCase().trim());
 }
 
 /**
