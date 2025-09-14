@@ -187,9 +187,11 @@ export function SpeechRecognition({
       <CardHeader className="text-center">
         <div className="absolute right-4 top-4">
           <span
-            className={`${isListening ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/40"} inline-block w-2.5 h-2.5 rounded-full`}
-            aria-label={isListening ? "Идёт прослушивание" : "Ожидание"}
-            title={isListening ? "Идёт прослушивание" : "Ожидание"}
+            className={`${isActive && isListening ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/40"} inline-block w-2.5 h-2.5 rounded-full`}
+            aria-label={
+              isActive && isListening ? "Идёт прослушивание" : "Ожидание"
+            }
+            title={isActive && isListening ? "Идёт прослушивание" : "Ожидание"}
           />
         </div>
         <CardTitle className="flex items-center justify-center gap-2">
