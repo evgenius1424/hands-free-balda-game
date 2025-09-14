@@ -74,10 +74,13 @@ export default function GameClient({
   };
 
   const startGame = () => {
+    if (isGameActive) {
+      setIsGameActive(false);
+      return;
+    }
     setIsGameActive(true);
     setIsGameOver(false);
     setWinner(null);
-    setTimeLeft(120);
   };
 
   useEffect(() => {
