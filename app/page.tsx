@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { GameBoard } from "@/components/game-board";
-import { GamePanel } from "@/components/game-panel";
 import { SpeechRecognition } from "@/components/speech-recognition";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -242,17 +241,46 @@ export default function BaldaGame() {
         {/* Portrait / default layout */}
         {!isLandscape && (
           <>
-            <GamePanel
-              team1Score={teamScores.team1}
-              team2Score={teamScores.team2}
-              currentTeam={currentTeam}
-              timeLeft={timeLeft}
-              isActive={isGameActive}
-              isGameOver={isGameOver}
-              winner={winner}
-              onTimerEnd={handleTimerEnd}
-              onStart={startGame}
-            />
+            <Card className="px-3 py-2">
+              <div className="flex items-center justify-between gap-3 h-12">
+                {/* Left: Team 1 compact */}
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-xs">1</span>
+                  <span className="text-xl font-bold text-primary tabular-nums leading-none">{teamScores.team1}</span>
+                  <span
+                    className={`${currentTeam === 1 ? "bg-accent animate-pulse" : "bg-muted-foreground/40"} inline-block w-2.5 h-2.5 rounded-full`}
+                    aria-label={currentTeam === 1 ? "Ход команды 1" : "Ожидание"}
+                    title={currentTeam === 1 ? "Ход команды 1" : "Ожидание"}
+                  />
+                </div>
+
+                {/* Center: Timer + small button */}
+                <div className="flex items-center gap-2">
+                  <div className="text-2xl font-bold text-primary tabular-nums leading-none min-w-[5ch] text-center">
+                    {formatTime(timeLeft)}
+                  </div>
+                  <Button
+                    onClick={startGame}
+                    size="sm"
+                    variant={isGameActive ? "secondary" : "default"}
+                    className="h-8 px-3 shrink-0"
+                  >
+                    {isGameActive ? "II" : "▶"}
+                  </Button>
+                </div>
+
+                {/* Right: Team 2 compact */}
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={`${currentTeam === 2 ? "bg-accent animate-pulse" : "bg-muted-foreground/40"} inline-block w-2.5 h-2.5 rounded-full`}
+                    aria-label={currentTeam === 2 ? "Ход команды 2" : "Ожидание"}
+                    title={currentTeam === 2 ? "Ход команды 2" : "Ожидание"}
+                  />
+                  <span className="text-xl font-bold text-primary tabular-nums leading-none">{teamScores.team2}</span>
+                  <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-xs">2</span>
+                </div>
+              </div>
+            </Card>
 
             <div className="flex justify-center">
               <Card className="p-4 md:p-6 shadow-lg">
