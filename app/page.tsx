@@ -245,11 +245,17 @@ export default function BaldaGame() {
               <div className="flex items-center justify-between gap-3 h-12">
                 {/* Left: Team 1 compact */}
                 <div className="flex items-center gap-2 min-w-0">
-                  <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-xs">1</span>
-                  <span className="text-xl font-bold text-primary tabular-nums leading-none">{teamScores.team1}</span>
+                  <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-xs">
+                    1
+                  </span>
+                  <span className="text-xl font-bold text-primary tabular-nums leading-none">
+                    {teamScores.team1}
+                  </span>
                   <span
                     className={`${currentTeam === 1 ? "bg-accent animate-pulse" : "bg-muted-foreground/40"} inline-block w-2.5 h-2.5 rounded-full`}
-                    aria-label={currentTeam === 1 ? "Ход команды 1" : "Ожидание"}
+                    aria-label={
+                      currentTeam === 1 ? "Ход команды 1" : "Ожидание"
+                    }
                     title={currentTeam === 1 ? "Ход команды 1" : "Ожидание"}
                   />
                 </div>
@@ -273,11 +279,17 @@ export default function BaldaGame() {
                 <div className="flex items-center gap-2 min-w-0">
                   <span
                     className={`${currentTeam === 2 ? "bg-accent animate-pulse" : "bg-muted-foreground/40"} inline-block w-2.5 h-2.5 rounded-full`}
-                    aria-label={currentTeam === 2 ? "Ход команды 2" : "Ожидание"}
+                    aria-label={
+                      currentTeam === 2 ? "Ход команды 2" : "Ожидание"
+                    }
                     title={currentTeam === 2 ? "Ход команды 2" : "Ожидание"}
                   />
-                  <span className="text-xl font-bold text-primary tabular-nums leading-none">{teamScores.team2}</span>
-                  <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-xs">2</span>
+                  <span className="text-xl font-bold text-primary tabular-nums leading-none">
+                    {teamScores.team2}
+                  </span>
+                  <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-xs">
+                    2
+                  </span>
                 </div>
               </div>
             </Card>
@@ -305,88 +317,92 @@ export default function BaldaGame() {
         )}
 
         {isLandscape && (
-          <>
-            {/* Main 3-column layout (no top timer) */}
-            <div className="grid grid-cols-12 gap-4 md:gap-6 items-start">
-              {/* Left sidebar: Team 1 + Timer */}
-              <div className="col-span-12 md:col-span-3 xl:col-span-2 space-y-4">
-                <Card className="p-4">
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-sm">
-                        1
-                      </span>
-                      <span className="text-lg font-semibold">Команда 1</span>
-                    </div>
-                    <div className="text-4xl font-bold text-primary">
-                      {teamScores.team1}
-                    </div>
-                    <span
-                      className={`text-xs px-2 py-1 rounded border ${currentTeam === 1 ? "bg-accent text-accent-foreground animate-pulse" : "text-muted-foreground"}`}
-                    >
-                      {currentTeam === 1 ? "Ваш ход" : "Ожидание"}
+          <div className="flex justify-center items-start gap-6 md:gap-10">
+            {/* Left panel: Team 1 + Timer */}
+            <div className="flex flex-col gap-4 w-40 md:w-48">
+              <Card className="p-4">
+                <div className="flex flex-col items-center space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-sm">
+                      1
                     </span>
+                    <span className="text-lg font-semibold">Команда 1</span>
                   </div>
-                </Card>
-
-                <Card className="px-4 py-2">
-                  <div className="flex w-full items-center justify-between gap-4 h-12 md:h-14">
-                    <div className="text-3xl md:text-4xl font-bold text-primary tabular-nums leading-none">
-                      {formatTime(timeLeft)}
-                    </div>
-                    <Button
-                      onClick={startGame}
-                      size="default"
-                      variant={isGameActive ? "secondary" : "default"}
-                      className="flex items-center gap-2 shrink-0 h-10 md:h-11 px-4 md:px-5"
-                    >
-                      {isGameActive ? "Пауза" : "Старт"}
-                    </Button>
+                  <div className="text-4xl font-bold text-primary">
+                    {teamScores.team1}
                   </div>
-                </Card>
-              </div>
+                  <span
+                    className={`text-xs px-2 py-1 rounded border ${
+                      currentTeam === 1
+                        ? "bg-accent text-accent-foreground animate-pulse"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {currentTeam === 1 ? "Ваш ход" : "Ожидание"}
+                  </span>
+                </div>
+              </Card>
 
-              {/* Center: Game board (maximize size) */}
-              <div className="col-span-12 md:col-span-6 xl:col-span-8 flex justify-center">
-                <Card className="p-3 md:p-4 lg:p-6 shadow-lg">
-                  <GameBoard
-                    grid={gameGrid}
-                    isActive={isGameActive}
-                    placementHints={wordPlacements}
-                    onHintSelect={handlePlacementSelect}
-                    centerWord={centerWord}
-                  />
-                </Card>
-              </div>
-
-              <div className="col-span-12 md:col-span-3 xl:col-span-2 space-y-4">
-                <Card className="p-4">
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-sm">
-                        2
-                      </span>
-                      <span className="text-lg font-semibold">Команда 2</span>
-                    </div>
-                    <div className="text-4xl font-bold text-primary">
-                      {teamScores.team2}
-                    </div>
-                    <span
-                      className={`text-xs px-2 py-1 rounded border ${currentTeam === 2 ? "bg-accent text-accent-foreground animate-pulse" : "text-muted-foreground"}`}
-                    >
-                      {currentTeam === 2 ? "Ваш ход" : "Ожидание"}
-                    </span>
+              <Card className="px-4 py-2">
+                <div className="flex w-full items-center justify-between gap-4 h-12 md:h-14">
+                  <div className="text-3xl md:text-4xl font-bold text-primary tabular-nums leading-none">
+                    {formatTime(timeLeft)}
                   </div>
-                </Card>
-
-                <SpeechRecognition
-                  onWordDetected={handleWordDetected}
-                  isActive={isGameActive && currentTeam !== null}
-                  currentTeam={currentTeam}
-                />
-              </div>
+                  <Button
+                    onClick={startGame}
+                    size="default"
+                    variant={isGameActive ? "secondary" : "default"}
+                    className="flex items-center gap-2 shrink-0 h-10 md:h-11 px-4 md:px-5"
+                  >
+                    {isGameActive ? "Пауза" : "Старт"}
+                  </Button>
+                </div>
+              </Card>
             </div>
-          </>
+
+            {/* Center: Game board */}
+            <Card className="p-3 md:p-4 lg:p-6 shadow-lg">
+              <GameBoard
+                grid={gameGrid}
+                isActive={isGameActive}
+                placementHints={wordPlacements}
+                onHintSelect={handlePlacementSelect}
+                centerWord={centerWord}
+              />
+            </Card>
+
+            {/* Right panel: Team 2 + Speech */}
+            <div className="flex flex-col gap-4 w-40 md:w-48">
+              <Card className="p-4">
+                <div className="flex flex-col items-center space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-sm">
+                      2
+                    </span>
+                    <span className="text-lg font-semibold">Команда 2</span>
+                  </div>
+                  <div className="text-4xl font-bold text-primary">
+                    {teamScores.team2}
+                  </div>
+                  <span
+                    className={`text-xs px-2 py-1 rounded border ${
+                      currentTeam === 2
+                        ? "bg-accent text-accent-foreground animate-pulse"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {currentTeam === 2 ? "Ваш ход" : "Ожидание"}
+                  </span>
+                </div>
+              </Card>
+
+              <SpeechRecognition
+                onWordDetected={handleWordDetected}
+                isActive={isGameActive && currentTeam !== null}
+                currentTeam={currentTeam}
+              />
+            </div>
+          </div>
         )}
 
         <div className="max-w-4xl mx-auto">
