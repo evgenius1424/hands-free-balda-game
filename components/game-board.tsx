@@ -44,7 +44,7 @@ export function GameBoard({
                 key={key}
                 variant="outline"
                 className={cn(
-                  "relative w-12 h-12 text-xl md:w-16 md:h-16 md:text-2xl font-bold transition-all duration-200",
+                  "relative w-12 h-12 text-xl md:w-16 md:h-16 md:text-2xl lg:w-20 lg:h-20 lg:text-3xl xl:w-24 xl:h-24 xl:text-4xl font-bold transition-all duration-200",
                   "hover:bg-primary/10 hover:border-primary/50",
                   cell ? "bg-primary text-primary-foreground" : "bg-background",
                   !isActive && "cursor-not-allowed opacity-50",

@@ -5,6 +5,7 @@ import { GameBoard } from "@/components/game-board";
 import { GamePanel } from "@/components/game-panel";
 import { SpeechRecognition } from "@/components/speech-recognition";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import {
   validateRussianNoun,
   findWordPlacements,
@@ -16,10 +17,22 @@ import { getRandomCenterWord } from "@/lib/center-words";
 export default function BaldaGame() {
   const [centerWord, setCenterWord] = useState<string>("");
   const [isClientMounted, setIsClientMounted] = useState(false);
+  const [isLandscape, setIsLandscape] = useState(false);
 
   useEffect(() => {
     setIsClientMounted(true);
     setCenterWord(getRandomCenterWord());
+
+    const updateOrientation = () => {
+      if (typeof window !== "undefined") {
+        const { innerWidth: w, innerHeight: h } = window;
+        setIsLandscape(w / Math.max(1, h) > 1.2);
+      }
+    };
+
+    updateOrientation();
+    window.addEventListener("resize", updateOrientation);
+    return () => window.removeEventListener("resize", updateOrientation);
   }, []);
 
   const [gameGrid, setGameGrid] = useState<(string | null)[][]>(() =>
@@ -211,46 +224,145 @@ export default function BaldaGame() {
     );
   }
 
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
+
   return (
     <div className="min-h-screen bg-background p-4">
-      <div className="max-w-6xl mx-auto space-y-8">
+      <div className="max-w-[1400px] mx-auto space-y-6">
         <div className="text-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-primary mb-6">
+          <h1 className="text-3xl md:text-4xl font-bold text-primary mb-4">
             Балда без рук
           </h1>
         </div>
 
-        <GamePanel
-          team1Score={teamScores.team1}
-          team2Score={teamScores.team2}
-          currentTeam={currentTeam}
-          timeLeft={timeLeft}
-          isActive={isGameActive}
-          isGameOver={isGameOver}
-          winner={winner}
-          onTimerEnd={handleTimerEnd}
-          onStart={startGame}
-        />
-
-        <div className="flex justify-center">
-          <Card className="p-4 md:p-6 shadow-lg">
-            <GameBoard
-              grid={gameGrid}
+        {/* Portrait / default layout */}
+        {!isLandscape && (
+          <>
+            <GamePanel
+              team1Score={teamScores.team1}
+              team2Score={teamScores.team2}
+              currentTeam={currentTeam}
+              timeLeft={timeLeft}
               isActive={isGameActive}
-              placementHints={wordPlacements}
-              onHintSelect={handlePlacementSelect}
-              centerWord={centerWord}
+              isGameOver={isGameOver}
+              winner={winner}
+              onTimerEnd={handleTimerEnd}
+              onStart={startGame}
             />
-          </Card>
-        </div>
 
-        <div className="max-w-2xl mx-auto">
-          <SpeechRecognition
-            onWordDetected={handleWordDetected}
-            isActive={isGameActive && currentTeam !== null}
-            currentTeam={currentTeam}
-          />
-        </div>
+            <div className="flex justify-center">
+              <Card className="p-4 md:p-6 shadow-lg">
+                <GameBoard
+                  grid={gameGrid}
+                  isActive={isGameActive}
+                  placementHints={wordPlacements}
+                  onHintSelect={handlePlacementSelect}
+                  centerWord={centerWord}
+                />
+              </Card>
+            </div>
+
+            <div className="max-w-2xl mx-auto">
+              <SpeechRecognition
+                onWordDetected={handleWordDetected}
+                isActive={isGameActive && currentTeam !== null}
+                currentTeam={currentTeam}
+              />
+            </div>
+          </>
+        )}
+
+        {/* Landscape / wide layout */}
+        {isLandscape && (
+          <>
+            {/* Main 3-column layout (no top timer) */}
+            <div className="grid grid-cols-12 gap-4 md:gap-6 items-start">
+              {/* Left sidebar: Team 1 + Timer */}
+              <div className="col-span-12 md:col-span-3 xl:col-span-2 space-y-4">
+                <Card className="p-4">
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-sm">
+                        1
+                      </span>
+                      <span className="text-lg font-semibold">Команда 1</span>
+                    </div>
+                    <div className="text-4xl font-bold text-primary">
+                      {teamScores.team1}
+                    </div>
+                    <span
+                      className={`text-xs px-2 py-1 rounded border ${currentTeam === 1 ? "bg-accent text-accent-foreground animate-pulse" : "text-muted-foreground"}`}
+                    >
+                      {currentTeam === 1 ? "Ваш ход" : "Ожидание"}
+                    </span>
+                  </div>
+                </Card>
+
+                {/* Timer card under Team 1 */}
+                <Card className="p-4">
+                  <div className="flex items-center justify-center gap-6">
+                    <div className="text-3xl md:text-5xl font-bold text-primary text-center min-w-[6ch]">
+                      {formatTime(timeLeft)}
+                    </div>
+                    <Button
+                      onClick={startGame}
+                      size="lg"
+                      variant={isGameActive ? "secondary" : "default"}
+                      className="flex items-center gap-2"
+                    >
+                      {isGameActive ? "Пауза" : "Старт"}
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+
+              {/* Center: Game board (maximize size) */}
+              <div className="col-span-12 md:col-span-6 xl:col-span-8 flex justify-center">
+                <Card className="p-3 md:p-4 lg:p-6 shadow-lg">
+                  <GameBoard
+                    grid={gameGrid}
+                    isActive={isGameActive}
+                    placementHints={wordPlacements}
+                    onHintSelect={handlePlacementSelect}
+                    centerWord={centerWord}
+                  />
+                </Card>
+              </div>
+
+              {/* Right sidebar: Team 2 + Speech */}
+              <div className="col-span-12 md:col-span-3 xl:col-span-2 space-y-4">
+                <Card className="p-4">
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-sm">
+                        2
+                      </span>
+                      <span className="text-lg font-semibold">Команда 2</span>
+                    </div>
+                    <div className="text-4xl font-bold text-primary">
+                      {teamScores.team2}
+                    </div>
+                    <span
+                      className={`text-xs px-2 py-1 rounded border ${currentTeam === 2 ? "bg-accent text-accent-foreground animate-pulse" : "text-muted-foreground"}`}
+                    >
+                      {currentTeam === 2 ? "Ваш ход" : "Ожидание"}
+                    </span>
+                  </div>
+                </Card>
+
+                <SpeechRecognition
+                  onWordDetected={handleWordDetected}
+                  isActive={isGameActive && currentTeam !== null}
+                  currentTeam={currentTeam}
+                />
+              </div>
+            </div>
+          </>
+        )}
 
         <div className="max-w-4xl mx-auto">
           <Card className="p-4 bg-muted">
