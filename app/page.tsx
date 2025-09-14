@@ -276,7 +276,6 @@ export default function BaldaGame() {
           </>
         )}
 
-        {/* Landscape / wide layout */}
         {isLandscape && (
           <>
             {/* Main 3-column layout (no top timer) */}
@@ -302,17 +301,16 @@ export default function BaldaGame() {
                   </div>
                 </Card>
 
-                {/* Timer card under Team 1 */}
-                <Card className="p-4">
-                  <div className="flex items-center justify-center gap-6">
-                    <div className="text-3xl md:text-5xl font-bold text-primary text-center min-w-[6ch]">
+                <Card className="px-4 py-2">
+                  <div className="flex w-full items-center justify-between gap-4 h-12 md:h-14">
+                    <div className="text-3xl md:text-4xl font-bold text-primary tabular-nums leading-none">
                       {formatTime(timeLeft)}
                     </div>
                     <Button
                       onClick={startGame}
-                      size="lg"
+                      size="default"
                       variant={isGameActive ? "secondary" : "default"}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-2 shrink-0 h-10 md:h-11 px-4 md:px-5"
                     >
                       {isGameActive ? "Пауза" : "Старт"}
                     </Button>
@@ -333,7 +331,6 @@ export default function BaldaGame() {
                 </Card>
               </div>
 
-              {/* Right sidebar: Team 2 + Speech */}
               <div className="col-span-12 md:col-span-3 xl:col-span-2 space-y-4">
                 <Card className="p-4">
                   <div className="flex flex-col items-center space-y-2">
