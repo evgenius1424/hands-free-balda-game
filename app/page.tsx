@@ -1,7 +1,5 @@
-import { getRandomCenterWord } from "@/lib/center-words";
-import GameClient from "@/components/game-client";
+import Game from "@/components/game";
 
 export default function Page() {
-  const centerWord = getRandomCenterWord();
-  return <GameClient centerWord={centerWord} />;
+  return <Game />;
 }

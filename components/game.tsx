@@ -11,13 +11,10 @@ import {
   validateWord,
   type WordPlacement,
 } from "@/lib/word-validator";
+import { getRandomCenterWord } from "@/lib/center-words";
 
-export default function GameClient({
-  centerWord: initialCenterWord,
-}: {
-  centerWord: string;
-}) {
-  const [centerWord, setCenterWord] = useState<string>(initialCenterWord);
+export default function Game() {
+  const [centerWord, setCenterWord] = useState<string>(getRandomCenterWord());
   const [isClientMounted, setIsClientMounted] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
 

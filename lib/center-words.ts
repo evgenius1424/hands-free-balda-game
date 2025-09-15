@@ -1,4 +1,3 @@
-import "server-only";
 
 export const CENTER_WORDS: string[] = [
   "АЗАРТ",
