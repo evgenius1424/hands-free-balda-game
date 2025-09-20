@@ -1,4 +1,3 @@
-
 export const CENTER_WORDS: string[] = [
   "АЗАРТ",
   "АКТЕР",

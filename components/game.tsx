@@ -239,8 +239,8 @@ export default function Game() {
       <div
         className={`${isLandscape ? "w-fit" : "max-w-[1400px]"} mx-auto space-y-6`}
       >
-        <div className="relative flex items-center justify-center">
-          <h1 className="text-3xl md:text-4xl font-bold text-primary mb-4">
+        <div className="relative flex items-center justify-center mb-4">
+          <h1 className="text-3xl md:text-4xl font-bold text-primary">
             {t("common.title")}
           </h1>
           <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2">
