@@ -12,6 +12,7 @@ import {
   type WordPlacement,
 } from "@/lib/word-validator";
 import { getRandomCenterWord } from "@/lib/center-words";
+import { GithubIcon } from "lucide-react";
 
 export default function Game() {
   const [centerWord, setCenterWord] = useState<string>(getRandomCenterWord());
@@ -233,11 +234,26 @@ export default function Game() {
 
   return (
     <div className="min-h-screen bg-background p-4">
-      <div className="max-w-[1400px] mx-auto space-y-6">
-        <div className="text-center">
+      <div
+        className={`${isLandscape ? "w-fit" : "max-w-[1400px]"} mx-auto space-y-6`}
+      >
+        <div className="relative flex items-center justify-center">
           <h1 className="text-3xl md:text-4xl font-bold text-primary mb-4">
             Балда без рук
           </h1>
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2">
+            <a
+              href="https://github.com/evgenius1424/hands-free-balda-game"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={"Открыть Github"}
+              title={"Открыть Github"}
+            >
+              <Button variant="ghost" size="icon" className="h-9 w-9">
+                <GithubIcon className="h-5 w-5" />
+              </Button>
+            </a>
+          </div>
         </div>
 
         {!isLandscape && (
