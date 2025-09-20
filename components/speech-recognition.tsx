@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Volume2 } from "lucide-react";
-import { useI18n } from "@/components/i18n";
+import { useI18n } from "@/lib/i18n";
 
 interface SpeechRecognitionProps {
   onWordDetected: (word: string, fullText: string) => void;

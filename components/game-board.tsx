@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { WordPlacement } from "@/lib/word-validator";
-import { useI18n } from "@/components/i18n";
+import { useI18n } from "@/lib/i18n";
 
 interface GameBoardProps {
   grid: (string | null)[][];

@@ -13,7 +13,7 @@ import {
 } from "@/lib/word-validator";
 import { getRandomCenterWord } from "@/lib/center-words";
 import { GithubIcon } from "lucide-react";
-import { useI18n } from "@/components/i18n";
+import { useI18n } from "@/lib/i18n";
 
 export default function Game() {
   const { t } = useI18n();
