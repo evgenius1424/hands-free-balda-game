@@ -3,11 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Volume2 } from "lucide-react";
+import { useI18n } from "@/components/i18n";
 
 interface SpeechRecognitionProps {
   onWordDetected: (word: string, fullText: string) => void;
   isActive: boolean;
-  currentTeam: number;
 }
 
 interface CustomSpeechRecognitionEvent extends Event {
@@ -18,8 +18,8 @@ interface CustomSpeechRecognitionEvent extends Event {
 export function SpeechRecognition({
   onWordDetected,
   isActive,
-  currentTeam,
 }: SpeechRecognitionProps) {
+  const { t } = useI18n();
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState("");
@@ -40,7 +40,7 @@ export function SpeechRecognition({
       (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognitionAPI) {
-      setError("Браузер не поддерживает распознавание речи");
+      setError(t("common.browserNoSpeech"));
       return;
     }
 
@@ -189,21 +189,27 @@ export function SpeechRecognition({
           <span
             className={`${isActive && isListening ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/40"} inline-block w-2.5 h-2.5 rounded-full`}
             aria-label={
-              isActive && isListening ? "Идёт прослушивание" : "Ожидание"
+              isActive && isListening
+                ? t("common.listening")
+                : t("common.waiting")
             }
-            title={isActive && isListening ? "Идёт прослушивание" : "Ожидание"}
+            title={
+              isActive && isListening
+                ? t("common.listening")
+                : t("common.waiting")
+            }
           />
         </div>
         <CardTitle className="flex items-center justify-center gap-2">
           <Volume2 className="w-5 h-5 text-primary" />
-          Голосовой ввод
+          {t("common.voiceInput")}
         </CardTitle>
       </CardHeader>
 
       <CardContent className="space-y-4">
         <div className="p-3 bg-primary/10 rounded-lg border border-primary/20 min-h-16">
           <div className="text-xs text-muted-foreground mb-1">
-            Распознанный текст:
+            {t("common.recognizedText")}
           </div>
           <div className="text-lg font-bold text-primary min-h-10 h-10 overflow-hidden">
             {transcript || ""}

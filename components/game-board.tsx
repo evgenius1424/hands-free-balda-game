@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { WordPlacement } from "@/lib/word-validator";
+import { useI18n } from "@/components/i18n";
 
 interface GameBoardProps {
   grid: (string | null)[][];
@@ -28,9 +29,13 @@ export function GameBoard({
     }
   });
 
+  const { t } = useI18n();
+
   return (
     <div className="flex flex-col items-center space-y-4">
-      <h2 className="text-2xl font-bold text-primary">Игровое поле</h2>
+      <h2 className="text-2xl font-bold text-primary">
+        {t("common.gameBoard")}
+      </h2>
 
       <div className="grid grid-cols-5 gap-1 p-2 md:gap-2 md:p-4 bg-card rounded-lg border-2 border-primary/20">
         {grid.map((row, rowIndex) =>
@@ -76,7 +81,7 @@ export function GameBoard({
       </div>
 
       <div className="text-xs text-muted-foreground">
-        Сетка 5×5 • Центральное слово: {centerWord || "—"}
+        {t("common.gridFooter", { word: centerWord || "—" })}
       </div>
     </div>
   );

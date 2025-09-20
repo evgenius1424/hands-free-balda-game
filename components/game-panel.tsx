@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Pause, Play } from "lucide-react";
+import { useI18n } from "@/components/i18n";
 import { cn } from "@/lib/utils";
 
 interface GamePanelProps {
@@ -29,6 +30,7 @@ export function GamePanel({
   onTimerEnd,
   onStart,
 }: GamePanelProps) {
+  const { t } = useI18n();
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -49,7 +51,9 @@ export function GamePanel({
             >
               1
             </Badge>
-            <span className="text-lg font-semibold">Команда 1</span>
+            <span className="text-lg font-semibold">
+              {t("common.teamLabel", { num: 1 })}
+            </span>
           </div>
           <div className="text-3xl md:text-4xl font-bold text-primary">
             {team1Score}
@@ -63,7 +67,7 @@ export function GamePanel({
                 : "",
             )}
           >
-            {currentTeam === 1 ? "Ваш ход" : "Ожидание"}
+            {currentTeam === 1 ? t("common.yourTurn") : t("common.waiting")}
           </Badge>
         </div>
 
@@ -92,17 +96,17 @@ export function GamePanel({
             ) : (
               <Play className="w-4 h-4 md:w-5 md:h-5" />
             )}
-            {isActive ? "Пауза" : "Старт"}
+            {isActive ? t("common.pause") : t("common.start")}
           </Button>
 
           <div className="text-center text-xs md:text-sm text-muted-foreground">
             {isGameOver
               ? winner === "draw"
-                ? "Игра окончена. Ничья"
-                : `Игра окончена. Победила команда ${winner}`
+                ? t("common.gameOverDraw")
+                : t("common.gameOverWinner", { winner: String(winner) })
               : isActive
-                ? "Время хода"
-                : "Нажмите старт для начала игры"}
+                ? t("common.turnTime")
+                : t("common.pressStart")}
           </div>
         </div>
 
@@ -114,7 +118,9 @@ export function GamePanel({
             >
               2
             </Badge>
-            <span className="text-lg font-semibold">Команда 2</span>
+            <span className="text-lg font-semibold">
+              {t("common.teamLabel", { num: 2 })}
+            </span>
           </div>
           <div className="text-3xl md:text-4xl font-bold text-primary">
             {team2Score}
@@ -128,7 +134,7 @@ export function GamePanel({
                 : "",
             )}
           >
-            {currentTeam === 2 ? "Ваш ход" : "Ожидание"}
+            {currentTeam === 2 ? t("common.yourTurn") : t("common.waiting")}
           </Badge>
         </div>
       </div>

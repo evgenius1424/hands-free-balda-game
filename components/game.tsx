@@ -13,8 +13,10 @@ import {
 } from "@/lib/word-validator";
 import { getRandomCenterWord } from "@/lib/center-words";
 import { GithubIcon } from "lucide-react";
+import { useI18n } from "@/components/i18n";
 
 export default function Game() {
+  const { t } = useI18n();
   const [centerWord, setCenterWord] = useState<string>(getRandomCenterWord());
   const [isClientMounted, setIsClientMounted] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
@@ -218,7 +220,7 @@ export default function Game() {
         <div className="max-w-6xl mx-auto space-y-8">
           <div className="text-center">
             <h1 className="text-3xl md:text-4xl font-bold text-primary mb-6">
-              Балда без рук
+              {t("common.title")}
             </h1>
           </div>
         </div>
@@ -239,15 +241,15 @@ export default function Game() {
       >
         <div className="relative flex items-center justify-center">
           <h1 className="text-3xl md:text-4xl font-bold text-primary mb-4">
-            Балда без рук
+            {t("common.title")}
           </h1>
           <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2">
             <a
               href="https://github.com/evgenius1424/hands-free-balda-game"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={"Открыть Github"}
-              title={"Открыть Github"}
+              aria-label={t("common.openGithub")}
+              title={t("common.openGithub")}
             >
               <Button variant="ghost" size="icon" className="h-9 w-9">
                 <GithubIcon className="h-5 w-5" />
@@ -270,9 +272,15 @@ export default function Game() {
                   <span
                     className={`${currentTeam === 1 ? "bg-accent animate-pulse" : "bg-muted-foreground/40"} inline-block w-2.5 h-2.5 rounded-full`}
                     aria-label={
-                      currentTeam === 1 ? "Ход команды 1" : "Ожидание"
+                      currentTeam === 1
+                        ? t("common.teamTurn", { num: 1 })
+                        : t("common.waiting")
                     }
-                    title={currentTeam === 1 ? "Ход команды 1" : "Ожидание"}
+                    title={
+                      currentTeam === 1
+                        ? t("common.teamTurn", { num: 1 })
+                        : t("common.waiting")
+                    }
                   />
                 </div>
 
@@ -294,9 +302,15 @@ export default function Game() {
                   <span
                     className={`${currentTeam === 2 ? "bg-accent animate-pulse" : "bg-muted-foreground/40"} inline-block w-2.5 h-2.5 rounded-full`}
                     aria-label={
-                      currentTeam === 2 ? "Ход команды 2" : "Ожидание"
+                      currentTeam === 2
+                        ? t("common.teamTurn", { num: 2 })
+                        : t("common.waiting")
                     }
-                    title={currentTeam === 2 ? "Ход команды 2" : "Ожидание"}
+                    title={
+                      currentTeam === 2
+                        ? t("common.teamTurn", { num: 2 })
+                        : t("common.waiting")
+                    }
                   />
                   <span className="text-xl font-bold text-primary tabular-nums leading-none">
                     {teamScores.team2}
@@ -324,7 +338,6 @@ export default function Game() {
               <SpeechRecognition
                 onWordDetected={handleWordDetected}
                 isActive={isGameActive && currentTeam !== null}
-                currentTeam={currentTeam}
               />
             </div>
           </>
@@ -340,7 +353,9 @@ export default function Game() {
                     <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-sm">
                       1
                     </span>
-                    <span className="text-lg font-semibold">Команда 1</span>
+                    <span className="text-lg font-semibold">
+                      {t("common.teamLabel", { num: 1 })}
+                    </span>
                   </div>
                   <div className="text-4xl font-bold text-primary">
                     {teamScores.team1}
@@ -352,7 +367,9 @@ export default function Game() {
                         : "text-muted-foreground"
                     }`}
                   >
-                    {currentTeam === 1 ? "Ваш ход" : "Ожидание"}
+                    {currentTeam === 1
+                      ? t("common.yourTurn")
+                      : t("common.waiting")}
                   </span>
                 </div>
               </Card>
@@ -368,7 +385,7 @@ export default function Game() {
                     variant={isGameActive ? "secondary" : "default"}
                     className="flex items-center gap-2 shrink-0 h-10 md:h-11 px-4 md:px-5"
                   >
-                    {isGameActive ? "Пауза" : "Старт"}
+                    {isGameActive ? t("common.pause") : t("common.start")}
                   </Button>
                 </div>
               </Card>
@@ -391,7 +408,9 @@ export default function Game() {
                     <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-sm">
                       2
                     </span>
-                    <span className="text-lg font-semibold">Команда 2</span>
+                    <span className="text-lg font-semibold">
+                      {t("common.teamLabel", { num: 2 })}
+                    </span>
                   </div>
                   <div className="text-4xl font-bold text-primary">
                     {teamScores.team2}
@@ -403,7 +422,9 @@ export default function Game() {
                         : "text-muted-foreground"
                     }`}
                   >
-                    {currentTeam === 2 ? "Ваш ход" : "Ожидание"}
+                    {currentTeam === 2
+                      ? t("common.yourTurn")
+                      : t("common.waiting")}
                   </span>
                 </div>
               </Card>
@@ -411,7 +432,6 @@ export default function Game() {
               <SpeechRecognition
                 onWordDetected={handleWordDetected}
                 isActive={isGameActive && currentTeam !== null}
-                currentTeam={currentTeam}
               />
             </div>
           </div>
@@ -420,10 +440,7 @@ export default function Game() {
         <div className="max-w-4xl mx-auto">
           <Card className="p-4 bg-muted">
             <p className="text-sm md:text-base text-muted-foreground text-center">
-              Добавьте одну букву к существующим словам, чтобы создать новое
-              слово. Используйте речевое управление для ввода слов. Каждое слово
-              подтверждается цифрой варианта: один, два, три. Очки начисляются
-              по длине слова.
+              {t("common.instructions")}
             </p>
           </Card>
         </div>
