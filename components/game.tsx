@@ -15,26 +15,16 @@ import { getRandomCenterWord } from "@/lib/center-words";
 import { GithubIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSelector } from "@/components/language-selector";
+import { useIsLandscape } from "@/hooks/use-is-landscape";
 
 export default function Game() {
   const { t, locale, onLanguageChange, isHydrated } = useI18n();
   const [centerWord, setCenterWord] = useState<string>("");
   const [isClientMounted, setIsClientMounted] = useState(false);
-  const [isLandscape, setIsLandscape] = useState(false);
+  const isLandscape = useIsLandscape();
 
   useEffect(() => {
     setIsClientMounted(true);
-
-    const updateOrientation = () => {
-      if (typeof window !== "undefined") {
-        const { innerWidth: w, innerHeight: h } = window;
-        setIsLandscape(w / Math.max(1, h) > 1.2);
-      }
-    };
-
-    updateOrientation();
-    window.addEventListener("resize", updateOrientation);
-    return () => window.removeEventListener("resize", updateOrientation);
   }, []);
 
   // Initialize center word based on the current locale after hydration
@@ -48,7 +38,11 @@ export default function Game() {
     const unsubscribe = onLanguageChange((newLocale) => {
       const newCenterWord = getRandomCenterWord(newLocale);
       setCenterWord(newCenterWord);
-      setGameGrid(Array(5).fill(null).map(() => Array(5).fill(null)));
+      setGameGrid(
+        Array(5)
+          .fill(null)
+          .map(() => Array(5).fill(null)),
+      );
       setCurrentTeam(1);
       setTeamScores({ team1: 0, team2: 0 });
       setTimeLeft(120);
@@ -132,52 +126,59 @@ export default function Game() {
     const upperWord = word.toUpperCase().trim();
 
     // Voice commands for selection/cancel
-    const numberWords: Record<string, number> = locale === "ru" ? {
-      "0": 0,
-      "1": 1,
-      "2": 2,
-      "3": 3,
-      "4": 4,
-      "5": 5,
-      "6": 6,
-      "7": 7,
-      "8": 8,
-      "9": 9,
-      НОЛЬ: 0,
-      ОДИН: 1,
-      РАЗ: 1,
-      ДВА: 2,
-      ПАРА: 2,
-      ТРИ: 3,
-      ЧЕТЫРЕ: 4,
-      ПЯТЬ: 5,
-      ШЕСТЬ: 6,
-      СЕМЬ: 7,
-      ВОСЕМЬ: 8,
-      ДЕВЯТЬ: 9,
-    } : {
-      "0": 0,
-      "1": 1,
-      "2": 2,
-      "3": 3,
-      "4": 4,
-      "5": 5,
-      "6": 6,
-      "7": 7,
-      "8": 8,
-      "9": 9,
-      ZERO: 0,
-      ONE: 1,
-      TWO: 2,
-      THREE: 3,
-      FOUR: 4,
-      FIVE: 5,
-      SIX: 6,
-      SEVEN: 7,
-      EIGHT: 8,
-      NINE: 9,
-    };
-    const cancelWords = new Set(locale === "ru" ? ["ОТМЕНА", "СТОП", "НЕТ", "СБРОС"] : ["CANCEL", "STOP", "NO", "RESET"]);
+    const numberWords: Record<string, number> =
+      locale === "ru"
+        ? {
+            "0": 0,
+            "1": 1,
+            "2": 2,
+            "3": 3,
+            "4": 4,
+            "5": 5,
+            "6": 6,
+            "7": 7,
+            "8": 8,
+            "9": 9,
+            НОЛЬ: 0,
+            ОДИН: 1,
+            РАЗ: 1,
+            ДВА: 2,
+            ПАРА: 2,
+            ТРИ: 3,
+            ЧЕТЫРЕ: 4,
+            ПЯТЬ: 5,
+            ШЕСТЬ: 6,
+            СЕМЬ: 7,
+            ВОСЕМЬ: 8,
+            ДЕВЯТЬ: 9,
+          }
+        : {
+            "0": 0,
+            "1": 1,
+            "2": 2,
+            "3": 3,
+            "4": 4,
+            "5": 5,
+            "6": 6,
+            "7": 7,
+            "8": 8,
+            "9": 9,
+            ZERO: 0,
+            ONE: 1,
+            TWO: 2,
+            THREE: 3,
+            FOUR: 4,
+            FIVE: 5,
+            SIX: 6,
+            SEVEN: 7,
+            EIGHT: 8,
+            NINE: 9,
+          };
+    const cancelWords = new Set(
+      locale === "ru"
+        ? ["ОТМЕНА", "СТОП", "НЕТ", "СБРОС"]
+        : ["CANCEL", "STOP", "NO", "RESET"],
+    );
 
     if (cancelWords.has(upperWord)) {
       handleWordReject();

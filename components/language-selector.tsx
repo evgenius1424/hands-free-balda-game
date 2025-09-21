@@ -11,14 +11,12 @@ import { useI18n } from "@/lib/i18n";
 import { Languages } from "lucide-react";
 
 const languages = [
-  { code: "en" as const, name: "English", flag: "🇺🇸" },
-  { code: "ru" as const, name: "Русский", flag: "🇷🇺" },
+  { code: "en" as const, name: "English" },
+  { code: "ru" as const, name: "Русский" },
 ];
 
 export function LanguageSelector() {
   const { locale, setLocale, t } = useI18n();
-
-  const currentLanguage = languages.find((lang) => lang.code === locale);
 
   return (
     <DropdownMenu>
@@ -28,16 +26,15 @@ export function LanguageSelector() {
           <span className="sr-only">{t("common.selectLanguage")}</span>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="min-w-32 p-1">
         {languages.map((language) => (
           <DropdownMenuItem
             key={language.code}
             onClick={() => setLocale(language.code)}
-            className={`cursor-pointer ${
-              locale === language.code ? "bg-accent" : ""
+            className={`cursor-pointer py-2.5 px-3 mb-1 last:mb-0 rounded-sm ${
+              locale === language.code ? "bg-accent text-accent-foreground" : ""
             }`}
           >
-            <span className="mr-2">{language.flag}</span>
             {language.name}
           </DropdownMenuItem>
         ))}

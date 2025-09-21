@@ -110,7 +110,13 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   }, [locale]);
 
   const value = useMemo(
-    () => ({ locale, setLocale: changeLocale, t, onLanguageChange, isHydrated }),
+    () => ({
+      locale,
+      setLocale: changeLocale,
+      t,
+      onLanguageChange,
+      isHydrated,
+    }),
     [locale, t, isHydrated],
   );
 
