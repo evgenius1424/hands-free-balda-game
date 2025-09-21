@@ -18,6 +18,8 @@
     "gameOverWinner": "Игра окончена. Победила команда {winner}",
     "turnTime": "Время хода",
     "pressStart": "Нажмите старт для начала игры",
-    "teamTurn": "Ход команды {num}"
+    "teamTurn": "Ход команды {num}",
+    "language": "Язык",
+    "selectLanguage": "Выберите язык"
   }
 }

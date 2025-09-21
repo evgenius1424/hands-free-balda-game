@@ -14,10 +14,11 @@ import {
 import { getRandomCenterWord } from "@/lib/center-words";
 import { GithubIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { LanguageSelector } from "@/components/language-selector";
 
 export default function Game() {
-  const { t } = useI18n();
-  const [centerWord, setCenterWord] = useState<string>(getRandomCenterWord());
+  const { t, locale, onLanguageChange, isHydrated } = useI18n();
+  const [centerWord, setCenterWord] = useState<string>("");
   const [isClientMounted, setIsClientMounted] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
 
@@ -35,6 +36,33 @@ export default function Game() {
     window.addEventListener("resize", updateOrientation);
     return () => window.removeEventListener("resize", updateOrientation);
   }, []);
+
+  // Initialize center word based on the current locale after hydration
+  useEffect(() => {
+    if (!centerWord && isHydrated) {
+      setCenterWord(getRandomCenterWord(locale));
+    }
+  }, [locale, centerWord, isHydrated]);
+
+  useEffect(() => {
+    const unsubscribe = onLanguageChange((newLocale) => {
+      const newCenterWord = getRandomCenterWord(newLocale);
+      setCenterWord(newCenterWord);
+      setGameGrid(Array(5).fill(null).map(() => Array(5).fill(null)));
+      setCurrentTeam(1);
+      setTeamScores({ team1: 0, team2: 0 });
+      setTimeLeft(120);
+      setIsGameActive(false);
+      setIsGameOver(false);
+      setWinner(null);
+      setCurrentWord("");
+      setIsWordValid(false);
+      setWordPlacements([]);
+      setUsedWords(new Set());
+    });
+
+    return unsubscribe;
+  }, [onLanguageChange]);
 
   const [gameGrid, setGameGrid] = useState<(string | null)[][]>(() =>
     Array(5)
@@ -104,7 +132,7 @@ export default function Game() {
     const upperWord = word.toUpperCase().trim();
 
     // Voice commands for selection/cancel
-    const numberWords: Record<string, number> = {
+    const numberWords: Record<string, number> = locale === "ru" ? {
       "0": 0,
       "1": 1,
       "2": 2,
@@ -127,8 +155,29 @@ export default function Game() {
       СЕМЬ: 7,
       ВОСЕМЬ: 8,
       ДЕВЯТЬ: 9,
+    } : {
+      "0": 0,
+      "1": 1,
+      "2": 2,
+      "3": 3,
+      "4": 4,
+      "5": 5,
+      "6": 6,
+      "7": 7,
+      "8": 8,
+      "9": 9,
+      ZERO: 0,
+      ONE: 1,
+      TWO: 2,
+      THREE: 3,
+      FOUR: 4,
+      FIVE: 5,
+      SIX: 6,
+      SEVEN: 7,
+      EIGHT: 8,
+      NINE: 9,
     };
-    const cancelWords = new Set(["ОТМЕНА", "СТОП", "НЕТ", "СБРОС"]);
+    const cancelWords = new Set(locale === "ru" ? ["ОТМЕНА", "СТОП", "НЕТ", "СБРОС"] : ["CANCEL", "STOP", "NO", "RESET"]);
 
     if (cancelWords.has(upperWord)) {
       handleWordReject();
@@ -214,7 +263,7 @@ export default function Game() {
     setWordPlacements([]);
   };
 
-  if (!isClientMounted || !centerWord) {
+  if (!isClientMounted || !isHydrated || !centerWord) {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-6xl mx-auto space-y-8">
@@ -255,6 +304,7 @@ export default function Game() {
                 <GithubIcon className="h-5 w-5" />
               </Button>
             </a>
+            <LanguageSelector />
           </div>
         </div>
 

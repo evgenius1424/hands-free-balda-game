@@ -19,7 +19,7 @@ export function SpeechRecognition({
   onWordDetected,
   isActive,
 }: SpeechRecognitionProps) {
-  const { t } = useI18n();
+  const { t, locale, onLanguageChange } = useI18n();
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState("");
@@ -33,6 +33,25 @@ export function SpeechRecognition({
   useEffect(() => {
     onWordDetectedRef.current = onWordDetected;
   }, [onWordDetected]);
+
+  useEffect(() => {
+    const unsubscribe = onLanguageChange(() => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+      setIsListening(false);
+      setTranscript("");
+      setError("");
+      if (restartTimeout.current) {
+        clearTimeout(restartTimeout.current);
+      }
+      if (silenceTimeout.current) {
+        clearTimeout(silenceTimeout.current);
+      }
+    });
+
+    return unsubscribe;
+  }, [onLanguageChange]);
 
   useEffect(() => {
     const SpeechRecognitionAPI =
@@ -50,7 +69,7 @@ export function SpeechRecognition({
     if (recognition) {
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = "ru-RU";
+      recognition.lang = locale === "ru" ? "ru-RU" : "en-US";
       // @ts-ignore
       recognition.maxAlternatives = 1;
 
@@ -162,7 +181,7 @@ export function SpeechRecognition({
         clearTimeout(silenceTimeout.current);
       }
     };
-  }, [isActive]);
+  }, [isActive, locale]);
 
   const startListening = () => {
     try {
