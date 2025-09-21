@@ -1,0 +1,25 @@
+{
+  "common": {
+    "title": "Hands-Free Balda",
+    "openGithub": "Open Github",
+    "teamLabel": "Team {num}",
+    "yourTurn": "Your turn",
+    "waiting": "Waiting",
+    "pause": "Pause",
+    "start": "Start",
+    "listening": "Listening",
+    "voiceInput": "Voice Input",
+    "recognizedText": "Recognized text:",
+    "browserNoSpeech": "Browser doesn't support speech recognition",
+    "gameBoard": "Game Board",
+    "gridFooter": "5×5 Grid • Center word: {word}",
+    "instructions": "Add one letter to existing words to create a new word. Use voice control to input words. Each word is confirmed by variant number: one, two, three. Points are awarded by word length.",
+    "gameOverDraw": "Game over. It's a draw",
+    "gameOverWinner": "Game over. Team {winner} wins",
+    "turnTime": "Turn time",
+    "pressStart": "Press start to begin the game",
+    "teamTurn": "Team {num}'s turn",
+    "language": "Language",
+    "selectLanguage": "Select language"
+  }
+}
