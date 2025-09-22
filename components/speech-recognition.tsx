@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Volume2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -10,9 +10,12 @@ interface SpeechRecognitionProps {
   isActive: boolean;
 }
 
-interface CustomSpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList;
-  resultIndex: number;
+interface RecognitionResult {
+  type: "partial" | "final";
+  text: string;
+  confidence?: number;
+  timestamp: number;
+  processing_time?: number;
 }
 
 export function SpeechRecognition({
@@ -21,201 +24,263 @@ export function SpeechRecognition({
 }: SpeechRecognitionProps) {
   const { t, locale, onLanguageChange } = useI18n();
   const [isListening, setIsListening] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState("");
 
-  const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const transcriptRef = useRef("");
+  const wsRef = useRef<WebSocket | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const restartTimeout = useRef<NodeJS.Timeout | null>(null);
-  const silenceTimeout = useRef<NodeJS.Timeout | null>(null);
 
   const onWordDetectedRef = useRef(onWordDetected);
   useEffect(() => {
     onWordDetectedRef.current = onWordDetected;
   }, [onWordDetected]);
 
-  useEffect(() => {
-    const unsubscribe = onLanguageChange(() => {
-      if (recognitionRef.current) {
-        recognitionRef.current.abort();
-      }
-      setIsListening(false);
-      setTranscript("");
-      setError("");
-      if (restartTimeout.current) {
-        clearTimeout(restartTimeout.current);
-      }
-      if (silenceTimeout.current) {
-        clearTimeout(silenceTimeout.current);
-      }
-    });
+  const extractLastWord = useCallback((text: string) => {
+    const cleaned = text
+      .replace(/[\p{P}\p{S}]+/gu, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!cleaned) return "";
+    const parts = cleaned.split(" ");
+    return (parts[parts.length - 1] || "").toUpperCase();
+  }, []);
 
-    return unsubscribe;
-  }, [onLanguageChange]);
+  const connectToServer = useCallback(async () => {
+    try {
+      const language = locale === "ru" ? "ru" : "en";
+      const ws = new WebSocket(`ws://localhost:8000/ws/speech/${language}`);
 
-  useEffect(() => {
-    const SpeechRecognitionAPI =
-      (window as any).SpeechRecognition ||
-      (window as any).webkitSpeechRecognition;
-
-    if (!SpeechRecognitionAPI) {
-      setError(t("common.browserNoSpeech"));
-      return;
-    }
-
-    recognitionRef.current = new SpeechRecognitionAPI();
-    const recognition = recognitionRef.current;
-
-    if (recognition) {
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = locale === "ru" ? "ru-RU" : "en-US";
-      // @ts-ignore
-      recognition.maxAlternatives = 1;
-
-      recognition.onstart = () => {
-        setIsListening(true);
+      ws.onopen = () => {
+        setIsConnected(true);
         setError("");
+        console.log("Connected to speech recognition server");
       };
 
-      recognition.onresult = (event: Event) => {
-        const speechEvent = event as CustomSpeechRecognitionEvent;
+      ws.onmessage = (event) => {
+        try {
+          const result: RecognitionResult = JSON.parse(event.data);
 
-        const extractLastWord = (text: string) => {
-          const cleaned = text
-            .replace(/[\p{P}\p{S}]+/gu, " ")
-            .replace(/\s+/g, " ")
-            .trim();
-          if (!cleaned) return "";
-          const parts = cleaned.split(" ");
-          return (parts[parts.length - 1] || "").toUpperCase();
-        };
+          // @ts-ignore
+          if (result.error) {
+            // @ts-ignore
+            console.error("Recognition error:", result.error);
+            setError("Recognition error occurred");
+            return;
+          }
 
-        let interimTranscript = "";
-
-        for (
-          let i = speechEvent.resultIndex;
-          i < speechEvent.results.length;
-          i++
-        ) {
-          const res = speechEvent.results[i];
-          const text = res[0]?.transcript || "";
-          if (res.isFinal) {
-            const finalText = text.trim();
+          if (result.type === "partial") {
+            setTranscript(result.text);
+          } else if (result.type === "final") {
+            const finalText = result.text.trim();
             setTranscript(finalText);
-            transcriptRef.current = finalText;
 
             const detectedWord = extractLastWord(finalText);
-            if (detectedWord) {
-              onWordDetectedRef.current?.(detectedWord, finalText);
+            if (detectedWord && onWordDetectedRef.current) {
+              onWordDetectedRef.current(detectedWord, finalText);
             }
-          } else {
-            interimTranscript += text;
           }
+        } catch (error) {
+          console.error("Error parsing result:", error);
+          setError("Error parsing recognition result");
         }
+      };
 
-        if (interimTranscript) {
-          setTranscript(interimTranscript);
-        }
-
-        if (silenceTimeout.current) {
-          clearTimeout(silenceTimeout.current);
-        }
+      ws.onclose = () => {
+        setIsConnected(false);
+        console.log("Disconnected from speech recognition server");
         if (isActive) {
-          silenceTimeout.current = setTimeout(() => {
-            try {
-              recognitionRef.current?.stop();
-            } catch (e) {}
-          }, 900);
+          scheduleReconnect();
         }
       };
 
-      // @ts-ignore
-      recognition.onspeechstart = () => {
-        if (silenceTimeout.current) {
-          clearTimeout(silenceTimeout.current);
-        }
-      };
-
-      // @ts-ignore
-      recognition.onspeechend = () => {
-        setIsListening(false);
-      };
-
-      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-        if (event.error !== "no-speech") {
-        }
-        setIsListening(false);
-        scheduleRestart();
-      };
-
-      recognition.onend = () => {
-        setIsListening(false);
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        setIsConnected(false);
+        setError("Connection error");
         if (isActive) {
-          scheduleRestart();
+          scheduleReconnect();
         }
       };
 
+      wsRef.current = ws;
+    } catch (error) {
+      console.error("Failed to connect to server:", error);
+      setError("Failed to connect to speech server");
       if (isActive) {
-        startListening();
+        scheduleReconnect();
       }
     }
+  }, [locale, isActive, extractLastWord]);
 
-    return () => {
-      if (recognitionRef.current) {
-        const currentRecognition = recognitionRef.current;
-        currentRecognition.onstart = null;
-        currentRecognition.onresult = null;
-        // @ts-ignore
-        currentRecognition.onspeechend = null;
-        // @ts-ignore
-        currentRecognition.onspeechstart = null;
-        currentRecognition.onerror = null;
-        currentRecognition.onend = null;
-        currentRecognition.abort();
-      }
-      if (restartTimeout.current) {
-        clearTimeout(restartTimeout.current);
-      }
-      if (silenceTimeout.current) {
-        clearTimeout(silenceTimeout.current);
-      }
-    };
-  }, [isActive, locale]);
+  const disconnectFromServer = useCallback(() => {
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    setIsConnected(false);
+  }, []);
 
-  const startListening = () => {
+  const startRecording = useCallback(async () => {
     try {
-      setTranscript("");
-      transcriptRef.current = "";
-      recognitionRef.current?.start();
-    } catch (e) {}
-  };
+      if (!isConnected) {
+        setError("Not connected to server");
+        return;
+      }
 
-  const scheduleRestart = () => {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+
+      streamRef.current = stream;
+
+      audioContextRef.current = new AudioContext({ sampleRate: 16000 });
+      sourceRef.current = audioContextRef.current.createMediaStreamSource(stream);
+
+      processorRef.current = audioContextRef.current.createScriptProcessor(
+        4096,
+        1,
+        1,
+      );
+
+      processorRef.current.onaudioprocess = (event) => {
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          const inputBuffer = event.inputBuffer.getChannelData(0);
+
+          const int16Buffer = new Int16Array(inputBuffer.length);
+          for (let i = 0; i < inputBuffer.length; i++) {
+            int16Buffer[i] = Math.max(
+              -32768,
+              Math.min(32767, inputBuffer[i] * 32767),
+            );
+          }
+
+          wsRef.current.send(int16Buffer.buffer);
+        }
+      };
+
+      sourceRef.current.connect(processorRef.current);
+      processorRef.current.connect(audioContextRef.current.destination);
+
+      setIsListening(true);
+      setError("");
+    } catch (error) {
+      console.error("Error starting recording:", error);
+      setError("Failed to start recording");
+    }
+  }, [isConnected]);
+
+  const stopRecording = useCallback(() => {
+    if (processorRef.current) {
+      processorRef.current.disconnect();
+      processorRef.current = null;
+    }
+
+    if (sourceRef.current) {
+      sourceRef.current.disconnect();
+      sourceRef.current = null;
+    }
+
+    if (audioContextRef.current) {
+      audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    setIsListening(false);
+    setTranscript("");
+  }, []);
+
+  const scheduleReconnect = useCallback(() => {
     if (!isActive) return;
     if (restartTimeout.current) {
       clearTimeout(restartTimeout.current);
     }
     restartTimeout.current = setTimeout(() => {
-      startListening();
-    }, 500);
-  };
+      connectToServer();
+    }, 2000);
+  }, [isActive, connectToServer]);
+
+  useEffect(() => {
+    const unsubscribe = onLanguageChange(() => {
+      disconnectFromServer();
+      stopRecording();
+      setTranscript("");
+      setError("");
+      if (restartTimeout.current) {
+        clearTimeout(restartTimeout.current);
+      }
+    });
+
+    return unsubscribe;
+  }, [onLanguageChange, disconnectFromServer, stopRecording]);
+
+  useEffect(() => {
+    if (isActive) {
+      connectToServer();
+    } else {
+      stopRecording();
+      disconnectFromServer();
+      if (restartTimeout.current) {
+        clearTimeout(restartTimeout.current);
+      }
+    }
+
+    return () => {
+      stopRecording();
+      disconnectFromServer();
+      if (restartTimeout.current) {
+        clearTimeout(restartTimeout.current);
+      }
+    };
+  }, [isActive, connectToServer, stopRecording, disconnectFromServer]);
+
+  useEffect(() => {
+    if (isActive && isConnected && !isListening) {
+      startRecording();
+    } else if (!isActive && isListening) {
+      stopRecording();
+    }
+  }, [isActive, isConnected, isListening, startRecording, stopRecording]);
 
   return (
     <Card className="w-full max-w-md mx-auto relative">
       <CardHeader className="text-center">
         <div className="absolute right-4 top-4">
           <span
-            className={`${isActive && isListening ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/40"} inline-block w-2.5 h-2.5 rounded-full`}
+            className={`${
+              isActive && isConnected && isListening
+                ? "bg-emerald-500 animate-pulse"
+                : isActive && isConnected
+                  ? "bg-yellow-500"
+                  : "bg-muted-foreground/40"
+            } inline-block w-2.5 h-2.5 rounded-full`}
             aria-label={
-              isActive && isListening
+              isActive && isConnected && isListening
                 ? t("common.listening")
-                : t("common.waiting")
+                : isActive && isConnected
+                  ? "Connected"
+                  : t("common.waiting")
             }
             title={
-              isActive && isListening
+              isActive && isConnected && isListening
                 ? t("common.listening")
-                : t("common.waiting")
+                : isActive && isConnected
+                  ? "Connected"
+                  : t("common.waiting")
             }
           />
         </div>
