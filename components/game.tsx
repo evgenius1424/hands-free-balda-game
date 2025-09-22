@@ -185,10 +185,13 @@ export default function Game() {
       return;
     }
 
-    if (upperWord in numberWords && wordPlacements.length > 0) {
+    if (upperWord in numberWords && wordPlacements.length > 0 && currentWord) {
       const idx = numberWords[upperWord] - 1; // convert to 0-based (ignoring 0)
       if (idx >= 0 && idx < wordPlacements.length) {
-        handlePlacementSelect(wordPlacements[idx]);
+        const placement = wordPlacements[idx];
+        if (placement.word === currentWord) {
+          handlePlacementSelect(placement);
+        }
         return;
       }
     }
@@ -200,6 +203,9 @@ export default function Game() {
 
     const isValid = validateWord(upperWord);
     setIsWordValid(isValid);
+
+    // Clear previous placements immediately when processing a new word
+    setWordPlacements([]);
     setCurrentWord(upperWord);
 
     if (isValid) {
@@ -215,8 +221,6 @@ export default function Game() {
       console.log(
         `Found ${placements.length} possible placements for ${upperWord}`,
       );
-    } else {
-      setWordPlacements([]);
     }
   };
 
