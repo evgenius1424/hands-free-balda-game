@@ -3,7 +3,6 @@ export interface Cell {
   c: number;
 }
 
-/** Represents a valid word placement on the grid. */
 export interface WordPlacement {
   word: string;
   newLetterPos: Cell;
@@ -12,25 +11,28 @@ export interface WordPlacement {
 }
 
 export function validateWord(word: string): boolean {
-  if (word.length < 2) return false;
-  return /^[А-ЯA-Z]+$/.test(word.toUpperCase().trim());
+  if (!word) return false;
+  const trimmed = word.toUpperCase().trim();
+  if (trimmed.length < 2) return false;
+  return /^[А-ЯA-Z]+$/.test(trimmed);
 }
 
-/**
- * Finds all valid placements for a given word on the current grid state.
- * This is a core function of the game logic.
- */
 export function findWordPlacements(
   word: string,
   grid: (string | null)[][],
 ): WordPlacement[] {
   const placements: WordPlacement[] = [];
+
+  if (!word || grid.length === 0 || grid[0].length === 0) return placements;
+
   const upperWord = BaldaGame._normalize(word);
+  if (!validateWord(upperWord)) return placements;
+
   const R = grid.length;
   const C = grid[0].length;
 
-  // The find-all logic needs a temporary board to simulate the new letter placement
   const tempBoard = grid.map((row) => [...row]);
+
   const emptyCells: Cell[] = [];
   for (let r = 0; r < R; r++) {
     for (let c = 0; c < C; c++) {
@@ -40,34 +42,34 @@ export function findWordPlacements(
     }
   }
 
+  const seenPlacements = new Set<string>();
+
   for (const placedCell of emptyCells) {
-    for (let i = 0; i < upperWord.length; i++) {
-      const placedLetter = upperWord[i];
-      // Simulate placing the new letter
+    for (let index = 0; index < upperWord.length; index++) {
+      const placedLetter = upperWord[index];
+      const key = `${placedCell.r},${placedCell.c},${index}`;
+      if (seenPlacements.has(key)) continue;
+      seenPlacements.add(key);
+
       tempBoard[placedCell.r][placedCell.c] = placedLetter;
 
-      // Now, try to find a path for the word on the temporary board
-      const path = findPath(upperWord, tempBoard, placedCell, i);
+      const path = findPath(upperWord, tempBoard, placedCell, index);
+      tempBoard[placedCell.r][placedCell.c] = null;
+
       if (path) {
         placements.push({
           word: upperWord,
-          newLetterPos: placedCell,
+          newLetterPos: { r: placedCell.r, c: placedCell.c },
           newLetter: placedLetter,
           path,
         });
       }
-      // Revert the temporary placement for the next iteration
-      tempBoard[placedCell.r][placedCell.c] = null;
     }
   }
 
   return placements;
 }
 
-/**
- * A private helper function that finds a path for a word on the board.
- * This function uses a Depth-First Search (DFS) algorithm.
- */
 function findPath(
   word: string,
   board: (string | null)[][],
@@ -78,9 +80,11 @@ function findPath(
   const C = board[0].length;
   const dr = [-1, 1, 0, 0];
   const dc = [0, 0, -1, 1];
+
   const visited: boolean[][] = Array.from({ length: R }, () =>
     Array<boolean>(C).fill(false),
   );
+
   const path: Cell[] = [];
 
   const inBounds = (r: number, c: number) => r >= 0 && r < R && c >= 0 && c < C;
@@ -88,47 +92,40 @@ function findPath(
   function dfs(posIndex: number, r: number, c: number): boolean {
     if (!inBounds(r, c) || visited[r][c]) return false;
 
-    const currentCell = { r, c };
     const boardLetter = board[r][c];
-
-    // Check if the board letter matches the word letter at this position
     if (boardLetter !== word[posIndex]) return false;
 
-    visited[r][c] = true;
-    path.push(currentCell);
-
-    if (posIndex === word.length - 1) {
-      // Found the full word. Check if the new letter was used.
-      const usedNewLetter = path.some(
-        (p) => p.r === designatedCell.r && p.c === designatedCell.c,
-      );
-      if (usedNewLetter) return true;
+    if (r === designatedCell.r && c === designatedCell.c) {
+      if (posIndex !== designatedIndex) return false;
+    } else {
+      if (posIndex === designatedIndex) return false;
     }
 
-    for (let t = 0; t < 4; t++) {
-      const nr = r + dr[t];
-      const nc = c + dc[t];
-      if (dfs(posIndex + 1, nr, nc)) {
-        return true;
+    visited[r][c] = true;
+    path.push({ r, c });
+
+    if (posIndex === word.length - 1) {
+      if (path.length === word.length) return true;
+    } else {
+      for (let t = 0; t < 4; t++) {
+        const nr = r + dr[t];
+        const nc = c + dc[t];
+        if (dfs(posIndex + 1, nr, nc)) return true;
       }
     }
 
-    // Backtrack
     visited[r][c] = false;
     path.pop();
     return false;
   }
 
-  // Start the DFS from all cells that match the first letter of the word
   for (let r = 0; r < R; r++) {
     for (let c = 0; c < C; c++) {
       if (board[r][c] === word[0]) {
-        // Reset state for a new search
         for (let i = 0; i < R; i++) visited[i].fill(false);
         path.length = 0;
-
         if (dfs(0, r, c)) {
-          return path;
+          return path.map((p) => ({ r: p.r, c: p.c }));
         }
       }
     }
@@ -186,7 +183,6 @@ export class BaldaGame {
     return s.toUpperCase().trim();
   }
 
-  // For debugging
   public boardToString(): string {
     return this.board
       .map((row) => row.map((ch) => ch || ".").join(" "))
