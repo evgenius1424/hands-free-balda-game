@@ -264,15 +264,39 @@ export default function Game() {
     setWordPlacements([]);
   };
 
+  const headerComponent = (
+    <div className="relative flex items-center justify-start sm:justify-center mb-4">
+      <h1 className="text-3xl md:text-4xl font-bold text-primary">
+        {t("common.title")}
+      </h1>
+      <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2">
+        <a
+          href="https://github.com/evgenius1424/hands-free-balda-game"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={t("common.openGithub")}
+          title={t("common.openGithub")}
+        >
+          <Button variant="ghost" size="icon" className="h-9 w-9">
+            <GithubIcon className="h-5 w-5" />
+          </Button>
+        </a>
+        <LanguageSelector />
+      </div>
+    </div>
+  );
+
   if (!isClientMounted || !isHydrated || !centerWord) {
     return (
       <div className="min-h-screen bg-background p-4">
         <div className="max-w-6xl mx-auto space-y-8">
-          <div className="text-center">
-            <h1 className="text-3xl md:text-4xl font-bold text-primary mb-6">
-              {t("common.title")}
-            </h1>
-          </div>
+          {isHydrated && (
+            <div className="relative flex items-center justify-start sm:justify-center mb-4">
+              <h1 className="text-3xl md:text-4xl font-bold text-primary">
+                {t("common.title")}
+              </h1>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -289,25 +313,7 @@ export default function Game() {
       <div
         className={`${isLandscape ? "w-fit" : "max-w-[1400px]"} mx-auto space-y-6`}
       >
-        <div className="relative flex items-center justify-center mb-4">
-          <h1 className="text-3xl md:text-4xl font-bold text-primary">
-            {t("common.title")}
-          </h1>
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2">
-            <a
-              href="https://github.com/evgenius1424/hands-free-balda-game"
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label={t("common.openGithub")}
-              title={t("common.openGithub")}
-            >
-              <Button variant="ghost" size="icon" className="h-9 w-9">
-                <GithubIcon className="h-5 w-5" />
-              </Button>
-            </a>
-            <LanguageSelector />
-          </div>
-        </div>
+        {headerComponent}
 
         {!isLandscape && (
           <>
