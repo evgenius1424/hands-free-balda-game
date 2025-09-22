@@ -16,6 +16,7 @@ import { GithubIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSelector } from "@/components/language-selector";
 import { useIsLandscape } from "@/hooks/use-is-landscape";
+import { getVoiceCommands, parseNumberCommand, isCancelCommand } from "@/lib/voice-commands";
 
 export default function Game() {
   const { t, locale, onLanguageChange, isHydrated } = useI18n();
@@ -119,71 +120,18 @@ export default function Game() {
     return () => clearInterval(interval);
   }, [isGameActive, currentTeam]);
 
-  const handleWordDetected = (word: string, fullText: string) => {
+  const handleWordDetected = (word: string) => {
     const upperWord = word.toUpperCase().trim();
+    const voiceCommands = getVoiceCommands(locale);
 
-    // Voice commands for selection/cancel
-    const numberWords: Record<string, number> =
-      locale === "ru"
-        ? {
-            "0": 0,
-            "1": 1,
-            "2": 2,
-            "3": 3,
-            "4": 4,
-            "5": 5,
-            "6": 6,
-            "7": 7,
-            "8": 8,
-            "9": 9,
-            НОЛЬ: 0,
-            ОДИН: 1,
-            РАЗ: 1,
-            ДВА: 2,
-            ПАРА: 2,
-            ТРИ: 3,
-            ЧЕТЫРЕ: 4,
-            ПЯТЬ: 5,
-            ШЕСТЬ: 6,
-            СЕМЬ: 7,
-            ВОСЕМЬ: 8,
-            ДЕВЯТЬ: 9,
-          }
-        : {
-            "0": 0,
-            "1": 1,
-            "2": 2,
-            "3": 3,
-            "4": 4,
-            "5": 5,
-            "6": 6,
-            "7": 7,
-            "8": 8,
-            "9": 9,
-            ZERO: 0,
-            ONE: 1,
-            TWO: 2,
-            THREE: 3,
-            FOUR: 4,
-            FIVE: 5,
-            SIX: 6,
-            SEVEN: 7,
-            EIGHT: 8,
-            NINE: 9,
-          };
-    const cancelWords = new Set(
-      locale === "ru"
-        ? ["ОТМЕНА", "СТОП", "НЕТ", "СБРОС"]
-        : ["CANCEL", "STOP", "NO", "RESET"],
-    );
-
-    if (cancelWords.has(upperWord)) {
+    if (isCancelCommand(upperWord, voiceCommands.cancelWords)) {
       handleWordReject();
       return;
     }
 
-    if (upperWord in numberWords && wordPlacements.length > 0 && currentWord) {
-      const idx = numberWords[upperWord] - 1; // convert to 0-based (ignoring 0)
+    const numberValue = parseNumberCommand(upperWord, voiceCommands.numberWords);
+    if (numberValue !== null && wordPlacements.length > 0 && currentWord) {
+      const idx = numberValue - 1; // convert to 0-based (ignoring 0)
       if (idx >= 0 && idx < wordPlacements.length) {
         const placement = wordPlacements[idx];
         if (placement.word === currentWord) {
