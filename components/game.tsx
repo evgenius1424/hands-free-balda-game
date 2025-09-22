@@ -89,7 +89,6 @@ export default function Game() {
   }, [centerWord]);
 
   const handleTimerEnd = () => {
-    console.log(`Timer ended for team ${currentTeam}`);
     setCurrentWord("");
     setWordPlacements([]);
     setCurrentTeam(currentTeam === 1 ? 2 : 1);
@@ -121,8 +120,6 @@ export default function Game() {
   }, [isGameActive, currentTeam]);
 
   const handleWordDetected = (word: string, fullText: string) => {
-    console.log(`Word detected: ${word}, Full text: ${fullText}`);
-
     const upperWord = word.toUpperCase().trim();
 
     // Voice commands for selection/cancel
@@ -197,7 +194,6 @@ export default function Game() {
     }
 
     if (usedWords.has(upperWord)) {
-      console.log(`Word already used: ${upperWord}`);
       return;
     }
 
@@ -218,15 +214,10 @@ export default function Game() {
         return true;
       });
       setWordPlacements(placements);
-      console.log(
-        `Found ${placements.length} possible placements for ${upperWord}`,
-      );
     }
   };
 
   const handlePlacementSelect = (placement: WordPlacement) => {
-    console.log(`Placing word: ${placement.word}`);
-
     const newGrid = applyWordPlacement(gameGrid, placement);
 
     const points = placement.word.length;
@@ -249,21 +240,15 @@ export default function Game() {
       if (newScores.team1 > newScores.team2) setWinner(1);
       else if (newScores.team2 > newScores.team1) setWinner(2);
       else setWinner("draw");
-      console.log(
-        `Game over. Final score Team1 ${newScores.team1} - Team2 ${newScores.team2}`,
-      );
       return;
     }
 
     // Otherwise continue to next team
     setCurrentTeam(currentTeam === 1 ? 2 : 1);
     setTimeLeft(120);
-
-    console.log(`Word placed successfully. Score: ${points} points`);
   };
 
   const handleWordReject = () => {
-    console.log(`Word rejected: ${currentWord}`);
     setCurrentWord("");
     setWordPlacements([]);
   };
