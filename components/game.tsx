@@ -18,6 +18,54 @@ import { LanguageSelector } from "@/components/language-selector";
 import { useIsLandscape } from "@/hooks/use-is-landscape";
 import { getVoiceCommands, parseNumberCommand, isCancelCommand } from "@/lib/voice-commands";
 
+// Strategy to select optimal placements when multiple letters can be placed in the same cell
+function selectOptimalPlacements(placements: WordPlacement[], grid: (string | null)[][]): WordPlacement[] {
+  // Count frequency of each letter currently on the board
+  const letterCounts = new Map<string, number>();
+  for (const row of grid) {
+    for (const cell of row) {
+      if (cell) {
+        letterCounts.set(cell, (letterCounts.get(cell) || 0) + 1);
+      }
+    }
+  }
+
+  // Group placements by position
+  const placementsByPosition = new Map<string, WordPlacement[]>();
+  for (const placement of placements) {
+    const posKey = `${placement.newLetterPos.r},${placement.newLetterPos.c}`;
+    if (!placementsByPosition.has(posKey)) {
+      placementsByPosition.set(posKey, []);
+    }
+    placementsByPosition.get(posKey)!.push(placement);
+  }
+
+  const optimalPlacements: WordPlacement[] = [];
+
+  // For each position, select the placement with the letter that has the lowest frequency
+  for (const [posKey, positionPlacements] of placementsByPosition) {
+    if (positionPlacements.length === 1) {
+      optimalPlacements.push(positionPlacements[0]);
+    } else {
+      // Find the letter with the lowest frequency on the board
+      let bestPlacement = positionPlacements[0];
+      let lowestFreq = letterCounts.get(bestPlacement.newLetter) || 0;
+
+      for (let i = 1; i < positionPlacements.length; i++) {
+        const placement = positionPlacements[i];
+        const freq = letterCounts.get(placement.newLetter) || 0;
+        if (freq < lowestFreq) {
+          lowestFreq = freq;
+          bestPlacement = placement;
+        }
+      }
+      optimalPlacements.push(bestPlacement);
+    }
+  }
+
+  return optimalPlacements;
+}
+
 export default function Game() {
   const { t, locale, onLanguageChange, isHydrated } = useI18n();
   const [centerWord, setCenterWord] = useState<string>("");
@@ -154,13 +202,7 @@ export default function Game() {
 
     if (isValid) {
       const placementsRaw = findWordPlacements(upperWord, gameGrid);
-      const seen = new Set<string>();
-      const placements = placementsRaw.filter((p) => {
-        const key = `${p.newLetterPos.r},${p.newLetterPos.c},${p.newLetter}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
+      const placements = selectOptimalPlacements(placementsRaw, gameGrid);
       setWordPlacements(placements);
     }
   };
