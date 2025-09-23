@@ -303,7 +303,7 @@ export const CENTER_WORDS_EN: string[] = [
 ];
 
 export function getRandomCenterWord(locale: "ru" | "en" = "ru"): string {
-  const words = locale === "ru" ? ["ЖИРАФ"] : CENTER_WORDS_EN;
+  const words = locale === "ru" ? CENTER_WORDS_RU : CENTER_WORDS_EN;
   const idx = Math.floor(Math.random() * words.length);
   return words[idx];
 }
