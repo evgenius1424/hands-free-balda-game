@@ -30,12 +30,7 @@ const NUMBER_WORDS_RU: Record<string, number> = {
   ДЕВЯТЬ: 9,
 };
 
-const CANCEL_WORDS_RU = new Set([
-  "ОТМЕНА",
-  "СТОП",
-  "НЕТ",
-  "СБРОС"
-]);
+const CANCEL_WORDS_RU = new Set(["ОТМЕНА", "СТОП", "НЕТ", "СБРОС"]);
 
 const NUMBER_WORDS_EN: Record<string, number> = {
   "0": 0,
@@ -60,12 +55,7 @@ const NUMBER_WORDS_EN: Record<string, number> = {
   NINE: 9,
 };
 
-const CANCEL_WORDS_EN = new Set([
-  "CANCEL",
-  "STOP",
-  "NO",
-  "RESET"
-]);
+const CANCEL_WORDS_EN = new Set(["CANCEL", "STOP", "NO", "RESET"]);
 
 export function getVoiceCommands(locale: Locale): VoiceCommands {
   switch (locale) {
@@ -85,7 +75,7 @@ export function getVoiceCommands(locale: Locale): VoiceCommands {
 
 export function parseNumberCommand(
   word: string,
-  numberWords: Record<string, number>
+  numberWords: Record<string, number>,
 ): number | null {
   const upperWord = word.toUpperCase().trim();
   return numberWords[upperWord] ?? null;
@@ -93,7 +83,7 @@ export function parseNumberCommand(
 
 export function isCancelCommand(
   word: string,
-  cancelWords: Set<string>
+  cancelWords: Set<string>,
 ): boolean {
   const upperWord = word.toUpperCase().trim();
   return cancelWords.has(upperWord);

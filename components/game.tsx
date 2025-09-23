@@ -16,7 +16,12 @@ import { GithubIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSelector } from "@/components/language-selector";
 import { useIsLandscape } from "@/hooks/use-is-landscape";
-import { getVoiceCommands, parseNumberCommand, isCancelCommand } from "@/lib/voice-commands";
+import {
+  getVoiceCommands,
+  isCancelCommand,
+  parseNumberCommand,
+} from "@/lib/voice-commands";
+import { selectOptimalPlacements } from "@/lib/optimal-placement-calculation";
 
 export default function Game() {
   const { t, locale, onLanguageChange, isHydrated } = useI18n();
@@ -129,7 +134,11 @@ export default function Game() {
       return;
     }
 
-    const numberValue = parseNumberCommand(upperWord, voiceCommands.numberWords);
+    const numberValue = parseNumberCommand(
+      upperWord,
+      voiceCommands.numberWords,
+    );
+
     if (numberValue !== null && wordPlacements.length > 0 && currentWord) {
       const idx = numberValue - 1; // convert to 0-based (ignoring 0)
       if (idx >= 0 && idx < wordPlacements.length) {
@@ -154,13 +163,7 @@ export default function Game() {
 
     if (isValid) {
       const placementsRaw = findWordPlacements(upperWord, gameGrid);
-      const seen = new Set<string>();
-      const placements = placementsRaw.filter((p) => {
-        const key = `${p.newLetterPos.r},${p.newLetterPos.c},${p.newLetter}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
+      const placements = selectOptimalPlacements(placementsRaw, gameGrid);
       setWordPlacements(placements);
     }
   };
