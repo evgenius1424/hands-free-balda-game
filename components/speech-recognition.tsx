@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Volume2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
+import { useSpeechRecognitionConfig, useWordProcessor } from "@/hooks/use-language-config";
 
 interface SpeechRecognitionProps {
   onWordDetected: (word: string, fullText: string) => void;
@@ -19,7 +20,9 @@ export function SpeechRecognition({
   onWordDetected,
   isActive,
 }: SpeechRecognitionProps) {
-  const { t, locale, onLanguageChange } = useI18n();
+  const { t, onLanguageChange } = useI18n();
+  const speechConfig = useSpeechRecognitionConfig();
+  const { transformWord } = useWordProcessor();
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState("");
@@ -69,7 +72,7 @@ export function SpeechRecognition({
     if (recognition) {
       recognition.continuous = true;
       recognition.interimResults = true;
-      recognition.lang = locale === "ru" ? "ru-RU" : "en-US";
+      recognition.lang = speechConfig.lang;
       // @ts-ignore
       recognition.maxAlternatives = 1;
 
@@ -88,7 +91,9 @@ export function SpeechRecognition({
             .trim();
           if (!cleaned) return "";
           const parts = cleaned.split(" ");
-          return (parts[parts.length - 1] || "").toUpperCase();
+          const lastWord = (parts[parts.length - 1] || "").toUpperCase();
+          // Apply language-specific transformations
+          return transformWord(lastWord);
         };
 
         let interimTranscript = "";
@@ -181,7 +186,7 @@ export function SpeechRecognition({
         clearTimeout(silenceTimeout.current);
       }
     };
-  }, [isActive, locale]);
+  }, [isActive, speechConfig.lang, transformWord]);
 
   const startListening = () => {
     try {

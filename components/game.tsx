@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import {
   applyWordPlacement,
   findWordPlacements,
-  validateWord,
   type WordPlacement,
 } from "@/lib/word-validator";
 import { getRandomCenterWord } from "@/lib/center-words";
@@ -17,14 +16,15 @@ import { useI18n } from "@/lib/i18n";
 import { LanguageSelector } from "@/components/language-selector";
 import { useIsLandscape } from "@/hooks/use-is-landscape";
 import {
-  getVoiceCommands,
-  isCancelCommand,
-  parseNumberCommand,
-} from "@/lib/voice-commands";
+  useVoiceCommands,
+  useWordProcessor,
+} from "@/hooks/use-language-config";
 import { selectOptimalPlacements } from "@/lib/optimal-placement-calculation";
 
 export default function Game() {
   const { t, locale, onLanguageChange, isHydrated } = useI18n();
+  const { parseNumber, isCancel } = useVoiceCommands();
+  const { validateWord: validateWordWithLanguage } = useWordProcessor();
   const [centerWord, setCenterWord] = useState<string>("");
   const [isClientMounted, setIsClientMounted] = useState(false);
   const isLandscape = useIsLandscape();
@@ -127,17 +127,13 @@ export default function Game() {
 
   const handleWordDetected = (word: string) => {
     const upperWord = word.toUpperCase().trim();
-    const voiceCommands = getVoiceCommands(locale);
 
-    if (isCancelCommand(upperWord, voiceCommands.cancelWords)) {
+    if (isCancel(upperWord)) {
       handleWordReject();
       return;
     }
 
-    const numberValue = parseNumberCommand(
-      upperWord,
-      voiceCommands.numberWords,
-    );
+    const numberValue = parseNumber(upperWord);
 
     if (numberValue !== null && wordPlacements.length > 0 && currentWord) {
       const idx = numberValue - 1; // convert to 0-based (ignoring 0)
@@ -154,7 +150,7 @@ export default function Game() {
       return;
     }
 
-    const isValid = validateWord(upperWord);
+    const isValid = validateWordWithLanguage(upperWord);
     setIsWordValid(isValid);
 
     // Clear previous placements immediately when processing a new word

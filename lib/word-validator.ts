@@ -10,11 +10,37 @@ export interface WordPlacement {
   path: Cell[];
 }
 
+import { validateWordForLanguage, transformWord } from "./language-config";
+import type { Locale } from "./language-config";
+
+/**
+ * Legacy validation function - now delegates to language-aware validation
+ * @deprecated Use validateWordForLanguage or useWordProcessor hook instead
+ */
 export function validateWord(word: string): boolean {
   if (!word) return false;
   const trimmed = word.toUpperCase().trim();
   if (trimmed.length < 2) return false;
+  // Fallback to basic validation for backward compatibility
   return /^[А-ЯA-Z]+$/.test(trimmed);
+}
+
+/**
+ * Validate and transform word according to language rules
+ */
+export function processWordForLanguage(word: string, locale: Locale): {
+  originalWord: string;
+  transformedWord: string;
+  isValid: boolean;
+} {
+  const transformedWord = transformWord(word, locale);
+  const isValid = validateWordForLanguage(word, locale);
+
+  return {
+    originalWord: word,
+    transformedWord,
+    isValid
+  };
 }
 
 export function findWordPlacements(
@@ -26,6 +52,7 @@ export function findWordPlacements(
   if (!word || grid.length === 0 || grid[0].length === 0) return placements;
 
   const upperWord = BaldaGame._normalize(word);
+  // Note: For language-aware processing, use processWordForLanguage instead
   if (!validateWord(upperWord)) return placements;
 
   const R = grid.length;
