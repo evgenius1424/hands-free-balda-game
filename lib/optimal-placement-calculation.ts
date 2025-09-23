@@ -1,5 +1,8 @@
 import { WordPlacement } from "@/lib/word-validator";
 
+/**
+ * Choose optimal placements when multiple words compete for the same grid cell.
+ */
 export function selectOptimalPlacements(
   placements: WordPlacement[],
   grid: (string | null)[][],
@@ -8,66 +11,61 @@ export function selectOptimalPlacements(
   const placementsByPosition = groupPlacementsByPosition(placements);
   const optimalPlacements: WordPlacement[] = [];
 
-  for (const [posKey, positionPlacements] of placementsByPosition) {
+  for (const [, positionPlacements] of placementsByPosition) {
     if (positionPlacements.length === 1) {
       optimalPlacements.push(positionPlacements[0]);
     } else {
-      const bestPlacement = selectBestPlacement(
-        positionPlacements,
-        letterCounts,
-        grid,
+      optimalPlacements.push(
+        selectBestPlacement(positionPlacements, letterCounts, grid),
       );
-      optimalPlacements.push(bestPlacement);
     }
   }
 
   return optimalPlacements;
 }
 
+/** Count frequency of each letter on the board. */
 function countLettersOnBoard(grid: (string | null)[][]): Map<string, number> {
-  const letterCounts = new Map<string, number>();
+  const counts = new Map<string, number>();
   for (const row of grid) {
     for (const cell of row) {
-      if (cell) {
-        letterCounts.set(cell, (letterCounts.get(cell) || 0) + 1);
-      }
+      if (cell) counts.set(cell, (counts.get(cell) || 0) + 1);
     }
   }
-  return letterCounts;
+  return counts;
 }
 
+/** Group placements by the grid cell they target. */
 function groupPlacementsByPosition(
   placements: WordPlacement[],
 ): Map<string, WordPlacement[]> {
-  const placementsByPosition = new Map<string, WordPlacement[]>();
+  const grouped = new Map<string, WordPlacement[]>();
   for (const placement of placements) {
-    const posKey = `${placement.newLetterPos.r},${placement.newLetterPos.c}`;
-    if (!placementsByPosition.has(posKey)) {
-      placementsByPosition.set(posKey, []);
-    }
-    placementsByPosition.get(posKey)!.push(placement);
+    const key = `${placement.newLetterPos.r},${placement.newLetterPos.c}`;
+    if (!grouped.has(key)) grouped.set(key, []);
+    grouped.get(key)!.push(placement);
   }
-  return placementsByPosition;
+  return grouped;
 }
 
+/** Select the highest scoring placement for a single cell. */
 function selectBestPlacement(
   positionPlacements: WordPlacement[],
   letterCounts: Map<string, number>,
   grid: (string | null)[][],
 ): WordPlacement {
-  let bestPlacement = positionPlacements[0];
-  let bestScore = calculatePlacementScore(bestPlacement, letterCounts, grid);
+  let best = positionPlacements[0];
+  let bestScore = calculatePlacementScore(best, letterCounts, grid);
 
   for (let i = 1; i < positionPlacements.length; i++) {
-    const placement = positionPlacements[i];
-    const score = calculatePlacementScore(placement, letterCounts, grid);
+    const p = positionPlacements[i];
+    const score = calculatePlacementScore(p, letterCounts, grid);
     if (score > bestScore) {
+      best = p;
       bestScore = score;
-      bestPlacement = placement;
     }
   }
-
-  return bestPlacement;
+  return best;
 }
 
 function calculatePlacementScore(
@@ -77,44 +75,15 @@ function calculatePlacementScore(
 ): number {
   const letter = placement.newLetter;
   const frequency = letterCounts.get(letter) || 0;
-  const futureWordPotential = estimateFutureWordPotential(placement, grid);
+
   const localRedundancy = calculateLocalRedundancy(placement, grid);
 
-  const frequencyScore = frequency > 0 ? Math.max(0, 5 - frequency) : 3;
-  const connectivityBonus = frequency > 0 ? frequency * 1.5 : 0;
+  const rarityScore = frequency > 0 ? Math.max(0, 5 - frequency) : 3;
 
-  return (
-    frequencyScore +
-    connectivityBonus -
-    localRedundancy * 4 +
-    futureWordPotential
-  );
+  return rarityScore - localRedundancy * 4;
 }
 
-function estimateFutureWordPotential(
-  placement: WordPlacement,
-  grid: (string | null)[][],
-): number {
-  const { r, c } = placement.newLetterPos;
-  let adjacentLetters = 0;
-
-  const directions = [
-    [-1, 0],
-    [1, 0],
-    [0, -1],
-    [0, 1],
-  ];
-  for (const [dr, dc] of directions) {
-    const nr = r + dr;
-    const nc = c + dc;
-    if (nr >= 0 && nr < grid.length && nc >= 0 && nc < grid[0].length) {
-      if (grid[nr][nc]) adjacentLetters++;
-    }
-  }
-
-  return adjacentLetters;
-}
-
+/** Penalize placing identical letters too close together. */
 function calculateLocalRedundancy(
   placement: WordPlacement,
   grid: (string | null)[][],
@@ -123,30 +92,21 @@ function calculateLocalRedundancy(
   const letter = placement.newLetter;
   let redundancy = 0;
 
-  const checkRadius = 3;
-  for (let dr = -checkRadius; dr <= checkRadius; dr++) {
-    for (let dc = -checkRadius; dc <= checkRadius; dc++) {
+  const radius = 3;
+  for (let dr = -radius; dr <= radius; dr++) {
+    for (let dc = -radius; dc <= radius; dc++) {
       if (dr === 0 && dc === 0) continue;
-
       const nr = r + dr;
       const nc = c + dc;
       if (nr >= 0 && nr < grid.length && nc >= 0 && nc < grid[0].length) {
         if (grid[nr][nc] === letter) {
-          const distance = Math.abs(dr) + Math.abs(dc);
-
-          if (distance === 1) {
-            redundancy += 5;
-          } else if (distance === 2) {
-            redundancy += 2;
-          } else if (distance === 3) {
-            redundancy += 0.8;
-          } else {
-            redundancy += 0.3;
-          }
+          const dist = Math.abs(dr) + Math.abs(dc);
+          if (dist === 1) redundancy += 5;
+          else if (dist === 2) redundancy += 2;
+          else if (dist === 3) redundancy += 0.8;
         }
       }
     }
   }
-
   return redundancy;
 }
