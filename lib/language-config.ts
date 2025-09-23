@@ -28,6 +28,14 @@ export interface LanguageConfig {
     cancelWords: Set<string>;
   };
 
+  /** Words to filter out from speech recognition */
+  filteredWords: {
+    /** Common words that should be ignored during recognition */
+    commonWords: Set<string>;
+    /** Short words that are too common or not useful for the game */
+    excludedShortWords: Set<string>;
+  };
+
   /** Additional language-specific settings */
   settings: {
     /** Case sensitivity for word matching */
@@ -94,7 +102,89 @@ const russianConfig: LanguageConfig = {
       ВОСЕМЬ: 8,
       ДЕВЯТЬ: 9,
     },
-    cancelWords: new Set(["ОТМЕНА", "СТОП", "НЕТ", "СБРОС"]),
+    cancelWords: new Set(["ОТМЕНА", "СТОП", "СБРОС"]),
+  },
+
+  filteredWords: {
+    commonWords: new Set([
+      // Common Russian words that interfere with speech recognition
+      "ДА",
+      "НЕТ",
+      "ОК",
+      "ОХ",
+      "АХ",
+      "ЭХ",
+      "УХ",
+      "ИХ",
+      "ТО",
+      "ТУ",
+      "ТЫ",
+      "МЫ",
+      "ОН",
+      "ОНА",
+      "ОНО",
+      "ОНИ",
+      "И",
+      "А",
+      "НО",
+      "ИЛИ",
+      "ЖЕ",
+      "УЖЕ",
+      "ЕЩЕ",
+      "ВОТ",
+      "ТАК",
+      "КАК",
+      "ГДЕ",
+      "КТО",
+      "ЧТО",
+      "НУ",
+      "ЛА",
+      "НА",
+      "ЗА",
+      "ПО",
+      "ОТ",
+      "ДО",
+      "БЕЗ",
+      "ХМ",
+      "ММ",
+      "ЭМ",
+      "АГА",
+      "УГУ",
+      "ОГО",
+    ]),
+    excludedShortWords: new Set([
+      // Very short words that are too common or not useful
+      "А",
+      "И",
+      "О",
+      "У",
+      "Я",
+      "Е",
+      "Ё",
+      "Ы",
+      "Э",
+      "Ю",
+      "Б",
+      "В",
+      "Г",
+      "Д",
+      "Ж",
+      "З",
+      "К",
+      "Л",
+      "М",
+      "Н",
+      "П",
+      "Р",
+      "С",
+      "Т",
+      "Ф",
+      "Х",
+      "Ц",
+      "Ч",
+      "Ш",
+      "Щ",
+    ]),
   },
 
   settings: {
@@ -167,7 +257,90 @@ const englishConfig: LanguageConfig = {
       EIGHT: 8,
       NINE: 9,
     },
-    cancelWords: new Set(["CANCEL", "STOP", "NO", "RESET"]),
+    cancelWords: new Set(["CANCEL", "STOP", "RESET"]),
+  },
+
+  filteredWords: {
+    commonWords: new Set([
+      // Common English words that interfere with speech recognition
+      "YES",
+      "NO",
+      "OK",
+      "OH",
+      "AH",
+      "EH",
+      "UH",
+      "HM",
+      "MM",
+      "THE",
+      "AND",
+      "OR",
+      "BUT",
+      "SO",
+      "TO",
+      "OF",
+      "IN",
+      "ON",
+      "AT",
+      "BY",
+      "FOR",
+      "WITH",
+      "FROM",
+      "UP",
+      "OUT",
+      "OFF",
+      "IS",
+      "ARE",
+      "WAS",
+      "WERE",
+      "BE",
+      "BEEN",
+      "HAVE",
+      "HAS",
+      "DO",
+      "DOES",
+      "DID",
+      "WILL",
+      "CAN",
+      "COULD",
+      "WOULD",
+      "HI",
+      "HEY",
+      "WELL",
+      "NOW",
+      "THEN",
+      "HERE",
+      "THERE",
+    ]),
+    excludedShortWords: new Set([
+      // Very short words that are too common or not useful
+      "A",
+      "I",
+      "O",
+      "U",
+      "E",
+      "Y",
+      "B",
+      "C",
+      "D",
+      "F",
+      "G",
+      "H",
+      "J",
+      "K",
+      "L",
+      "M",
+      "N",
+      "P",
+      "Q",
+      "R",
+      "S",
+      "T",
+      "V",
+      "W",
+      "X",
+      "Z",
+    ]),
   },
 
   settings: {
@@ -260,4 +433,59 @@ export function getSupportedLocales(): Locale[] {
  */
 export function isLocaleSupported(locale: string): locale is Locale {
   return locale in LANGUAGE_CONFIGS;
+}
+
+/**
+ * Check if a word should be filtered out (ignored) for a given language
+ */
+export function isWordFiltered(word: string, locale: Locale): boolean {
+  const config = getLanguageConfig(locale);
+  const upperWord = word.toUpperCase().trim();
+
+  // Check if it's a common word to filter
+  if (config.filteredWords.commonWords.has(upperWord)) {
+    return true;
+  }
+
+  // Check if it's an excluded short word
+  if (config.filteredWords.excludedShortWords.has(upperWord)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Get filtered words configuration for a locale
+ */
+export function getFilteredWords(locale: Locale) {
+  return getLanguageConfig(locale).filteredWords;
+}
+
+/**
+ * Process a word with filtering - returns null if word should be ignored
+ */
+export function processWordWithFiltering(
+  word: string,
+  locale: Locale,
+): {
+  transformedWord: string;
+  isValid: boolean;
+  isFiltered: boolean;
+} | null {
+  const transformedWord = transformWord(word, locale);
+  const isFiltered = isWordFiltered(transformedWord, locale);
+
+  // Return null if the word should be filtered out
+  if (isFiltered) {
+    return null;
+  }
+
+  const isValid = validateWordForLanguage(word, locale);
+
+  return {
+    transformedWord,
+    isValid,
+    isFiltered: false,
+  };
 }

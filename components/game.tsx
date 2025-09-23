@@ -24,7 +24,8 @@ import { selectOptimalPlacements } from "@/lib/optimal-placement-calculation";
 export default function Game() {
   const { t, locale, onLanguageChange, isHydrated } = useI18n();
   const { parseNumber, isCancel } = useVoiceCommands();
-  const { validateWord: validateWordWithLanguage } = useWordProcessor();
+  const { validateWord: validateWordWithLanguage, processWordWithFilter } =
+    useWordProcessor();
   const [centerWord, setCenterWord] = useState<string>("");
   const [isClientMounted, setIsClientMounted] = useState(false);
   const isLandscape = useIsLandscape();
@@ -146,19 +147,27 @@ export default function Game() {
       }
     }
 
-    if (usedWords.has(upperWord)) {
+    // Process word with filtering - ignore common words like "ДА"
+    const processedWord = processWordWithFilter(upperWord);
+    if (!processedWord) {
+      // Word was filtered out, ignore it silently
       return;
     }
 
-    const isValid = validateWordWithLanguage(upperWord);
+    const { transformedWord, isValid } = processedWord;
+
+    if (usedWords.has(transformedWord)) {
+      return;
+    }
+
     setIsWordValid(isValid);
 
     // Clear previous placements immediately when processing a new word
     setWordPlacements([]);
-    setCurrentWord(upperWord);
+    setCurrentWord(transformedWord);
 
     if (isValid) {
-      const placementsRaw = findWordPlacements(upperWord, gameGrid);
+      const placementsRaw = findWordPlacements(transformedWord, gameGrid);
       const placements = selectOptimalPlacements(placementsRaw, gameGrid);
       setWordPlacements(placements);
     }
