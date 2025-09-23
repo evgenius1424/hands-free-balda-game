@@ -23,11 +23,10 @@ This is a Next.js hands-free Balda game with TypeScript, React 19, and Tailwind 
 - React 19
 - TypeScript 5
 - Tailwind CSS v4
-- Radix UI components
+- Shadcn/ui components
 - React Hook Form with Zod validation
 
 ## Notes
-- Uses pnpm as package manager
-- Includes comprehensive UI component library (Radix UI)
+- Includes comprehensive UI component library (Shadcn/ui)
 - Supports internationalization
 - Uses modern Next.js App Router
