@@ -37,29 +37,30 @@ export default function Game() {
   // Initialize center word based on the current locale after hydration
   useEffect(() => {
     if (!centerWord && isHydrated) {
-      setCenterWord(getRandomCenterWord(locale));
+      getRandomCenterWord(locale).then(setCenterWord);
     }
   }, [locale, centerWord, isHydrated]);
 
   useEffect(() => {
     const unsubscribe = onLanguageChange((newLocale) => {
-      const newCenterWord = getRandomCenterWord(newLocale);
-      setCenterWord(newCenterWord);
-      setGameGrid(
-        Array(5)
-          .fill(null)
-          .map(() => Array(5).fill(null)),
-      );
-      setCurrentTeam(1);
-      setTeamScores({ team1: 0, team2: 0 });
-      setTimeLeft(120);
-      setIsGameActive(false);
-      setIsGameOver(false);
-      setWinner(null);
-      setCurrentWord("");
-      setIsWordValid(false);
-      setWordPlacements([]);
-      setUsedWords(new Set());
+      getRandomCenterWord(newLocale).then((newCenterWord) => {
+        setCenterWord(newCenterWord);
+        setGameGrid(
+          Array(5)
+            .fill(null)
+            .map(() => Array(5).fill(null)),
+        );
+        setCurrentTeam(1);
+        setTeamScores({ team1: 0, team2: 0 });
+        setTimeLeft(120);
+        setIsGameActive(false);
+        setIsGameOver(false);
+        setWinner(null);
+        setCurrentWord("");
+        setIsWordValid(false);
+        setWordPlacements([]);
+        setUsedWords(new Set());
+      });
     });
 
     return unsubscribe;
