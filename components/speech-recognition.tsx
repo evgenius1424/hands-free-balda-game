@@ -4,7 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Volume2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { useSpeechRecognitionConfig, useWordProcessor } from "@/hooks/use-language-config";
+import {
+  useSpeechRecognitionConfig,
+  useWordProcessor,
+} from "@/hooks/use-language-config";
 
 interface SpeechRecognitionProps {
   onWordDetected: (word: string, fullText: string) => void;
