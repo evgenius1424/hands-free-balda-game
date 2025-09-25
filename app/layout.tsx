@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   title: "Hands-Free Balda Game | Игра Балда без рук | balda-game.com",
   description:
     "Play Balda hands-free on your browser! A fun and interactive game to challenge your vocabulary skills. Играйте в Балду без рук в браузере! Увлекательная игра для развития словарного запаса.",
+  icons: {
+    icon: "/favicon.png",
+  },
   keywords: [
     // English keywords
     "Balda",
