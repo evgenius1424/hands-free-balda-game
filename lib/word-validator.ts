@@ -10,8 +10,8 @@ export interface WordPlacement {
   path: Cell[];
 }
 
-import { validateWordForLanguage, transformWord } from "./language-config";
 import type { Locale } from "./language-config";
+import { transformWord, validateWordForLanguage } from "./language-config";
 
 /**
  * Legacy validation function - now delegates to language-aware validation
@@ -28,7 +28,10 @@ export function validateWord(word: string): boolean {
 /**
  * Validate and transform word according to language rules
  */
-export function processWordForLanguage(word: string, locale: Locale): {
+export function processWordForLanguage(
+  word: string,
+  locale: Locale,
+): {
   originalWord: string;
   transformedWord: string;
   isValid: boolean;
@@ -39,7 +42,7 @@ export function processWordForLanguage(word: string, locale: Locale): {
   return {
     originalWord: word,
     transformedWord,
-    isValid
+    isValid,
   };
 }
 

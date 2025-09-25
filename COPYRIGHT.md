@@ -10,11 +10,13 @@ This software and its associated documentation (the “Software”) are the inte
 ---
 
 ## Domain Rights
+
 The domain **balda-game.com** and all associated subdomains are the exclusive property of **evgenius1424**.
 
 ---
 
 ## Source Code Attribution
+
 Any use, modification, or distribution of this Software must retain this copyright notice and provide proper attribution to the original author.
 
 ---
@@ -22,6 +24,7 @@ Any use, modification, or distribution of this Software must retain this copyrig
 ## Trademark Notice
 
 ### Domain and Service Mark Claims
+
 The following names, marks, and concepts are claimed as service marks or trademarks by **evgenius1424**:
 
 1. **"Hands-Free Balda Game"**
@@ -31,12 +34,14 @@ The following names, marks, and concepts are claimed as service marks or tradema
 5. All **branding and visual elements** associated with **balda-game.com**
 
 ### Trademark Rights
+
 These marks are used to identify and distinguish the services provided at **balda-game.com** and related platforms.
 Use of these marks without express written permission is prohibited.
 
 ---
 
 ## Voice-Controlled Gameplay Innovation
+
 The implementation of voice-controlled gameplay mechanics for the Balda word game, including but not limited to:
 
 - Speech recognition integration for word formation
@@ -49,6 +54,7 @@ These innovations are claimed as proprietary concepts and implementations by **e
 ---
 
 ## Usage Restrictions
+
 The following uses are specifically prohibited without written permission:
 
 - Commercial use of the "Hands-Free Balda" concept
@@ -59,12 +65,14 @@ The following uses are specifically prohibited without written permission:
 ---
 
 ## Notice of Rights
+
 ™ All rights reserved.
 These marks and concepts are protected under applicable trademark and intellectual property laws.
 
 ---
 
 ## Contact
+
 For copyright, licensing, or permission inquiries,
 please contact the project maintainer through the official GitHub repository.
 

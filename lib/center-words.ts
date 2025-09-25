@@ -6,7 +6,9 @@ async function loadCenterWords(locale: string): Promise<string[]> {
   }
 
   try {
-    const words = await import(`../data/center-words/${locale}.json`).then(module => module.default);
+    const words = await import(`../data/center-words/${locale}.json`).then(
+      (module) => module.default,
+    );
     wordsCache.set(locale, words);
     return words;
   } catch (error) {
@@ -15,7 +17,9 @@ async function loadCenterWords(locale: string): Promise<string[]> {
   }
 }
 
-export async function getRandomCenterWord(locale: "ru" | "en" = "ru"): Promise<string> {
+export async function getRandomCenterWord(
+  locale: "ru" | "en" = "ru",
+): Promise<string> {
   const words = await loadCenterWords(locale);
   if (words.length === 0) {
     console.warn(`No center words available for locale ${locale}`);

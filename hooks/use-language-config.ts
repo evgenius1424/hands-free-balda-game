@@ -1,16 +1,15 @@
 import { useMemo } from "react";
 import { useI18n } from "@/lib/i18n";
 import {
+  getFilteredWords,
   getLanguageConfig,
   getSpeechRecognitionLang,
-  transformWord,
-  validateWordForLanguage,
   getVoiceCommandsForLanguage,
   isWordFiltered,
+  type Locale,
   processWordWithFiltering,
-  getFilteredWords,
-  type LanguageConfig,
-  type Locale
+  transformWord,
+  validateWordForLanguage
 } from "@/lib/language-config";
 
 /**
@@ -21,20 +20,24 @@ export function useLanguageConfig() {
 
   const config = useMemo(() => getLanguageConfig(locale as Locale), [locale]);
 
-  const speechRecognitionLang = useMemo(() =>
-    getSpeechRecognitionLang(locale as Locale), [locale]
+  const speechRecognitionLang = useMemo(
+    () => getSpeechRecognitionLang(locale as Locale),
+    [locale],
   );
 
-  const voiceCommands = useMemo(() =>
-    getVoiceCommandsForLanguage(locale as Locale), [locale]
+  const voiceCommands = useMemo(
+    () => getVoiceCommandsForLanguage(locale as Locale),
+    [locale],
   );
 
-  const transformWordForCurrentLanguage = useMemo(() =>
-    (word: string) => transformWord(word, locale as Locale), [locale]
+  const transformWordForCurrentLanguage = useMemo(
+    () => (word: string) => transformWord(word, locale as Locale),
+    [locale],
   );
 
-  const validateWordForCurrentLanguage = useMemo(() =>
-    (word: string) => validateWordForLanguage(word, locale as Locale), [locale]
+  const validateWordForCurrentLanguage = useMemo(
+    () => (word: string) => validateWordForLanguage(word, locale as Locale),
+    [locale],
   );
 
   return {
@@ -53,10 +56,13 @@ export function useLanguageConfig() {
 export function useSpeechRecognitionConfig() {
   const { locale } = useI18n();
 
-  return useMemo(() => ({
-    lang: getSpeechRecognitionLang(locale as Locale),
-    locale: locale as Locale,
-  }), [locale]);
+  return useMemo(
+    () => ({
+      lang: getSpeechRecognitionLang(locale as Locale),
+      locale: locale as Locale,
+    }),
+    [locale],
+  );
 }
 
 /**
@@ -65,36 +71,43 @@ export function useSpeechRecognitionConfig() {
 export function useWordProcessor() {
   const { locale } = useI18n();
 
-  const processWord = useMemo(() =>
-    (word: string): { transformedWord: string; isValid: boolean } => {
-      const transformedWord = transformWord(word, locale as Locale);
-      const isValid = validateWordForLanguage(word, locale as Locale);
+  const processWord = useMemo(
+    () =>
+      (word: string): { transformedWord: string; isValid: boolean } => {
+        const transformedWord = transformWord(word, locale as Locale);
+        const isValid = validateWordForLanguage(word, locale as Locale);
 
-      return {
-        transformedWord,
-        isValid
-      };
-    }, [locale]
+        return {
+          transformedWord,
+          isValid,
+        };
+      },
+    [locale],
   );
 
-  const processWordWithFilter = useMemo(() =>
-    (word: string) => processWordWithFiltering(word, locale as Locale), [locale]
+  const processWordWithFilter = useMemo(
+    () => (word: string) => processWordWithFiltering(word, locale as Locale),
+    [locale],
   );
 
-  const transformOnly = useMemo(() =>
-    (word: string) => transformWord(word, locale as Locale), [locale]
+  const transformOnly = useMemo(
+    () => (word: string) => transformWord(word, locale as Locale),
+    [locale],
   );
 
-  const validateOnly = useMemo(() =>
-    (word: string) => validateWordForLanguage(word, locale as Locale), [locale]
+  const validateOnly = useMemo(
+    () => (word: string) => validateWordForLanguage(word, locale as Locale),
+    [locale],
   );
 
-  const isFiltered = useMemo(() =>
-    (word: string) => isWordFiltered(word, locale as Locale), [locale]
+  const isFiltered = useMemo(
+    () => (word: string) => isWordFiltered(word, locale as Locale),
+    [locale],
   );
 
-  const filteredWords = useMemo(() =>
-    getFilteredWords(locale as Locale), [locale]
+  const filteredWords = useMemo(
+    () => getFilteredWords(locale as Locale),
+    [locale],
   );
 
   return {
@@ -114,22 +127,27 @@ export function useWordProcessor() {
 export function useVoiceCommands() {
   const { locale } = useI18n();
 
-  const voiceCommands = useMemo(() =>
-    getVoiceCommandsForLanguage(locale as Locale), [locale]
+  const voiceCommands = useMemo(
+    () => getVoiceCommandsForLanguage(locale as Locale),
+    [locale],
   );
 
-  const parseNumber = useMemo(() =>
-    (word: string): number | null => {
-      const upperWord = word.toUpperCase().trim();
-      return voiceCommands.numberWords[upperWord] ?? null;
-    }, [voiceCommands]
+  const parseNumber = useMemo(
+    () =>
+      (word: string): number | null => {
+        const upperWord = word.toUpperCase().trim();
+        return voiceCommands.numberWords[upperWord] ?? null;
+      },
+    [voiceCommands],
   );
 
-  const isCancel = useMemo(() =>
-    (word: string): boolean => {
-      const upperWord = word.toUpperCase().trim();
-      return voiceCommands.cancelWords.has(upperWord);
-    }, [voiceCommands]
+  const isCancel = useMemo(
+    () =>
+      (word: string): boolean => {
+        const upperWord = word.toUpperCase().trim();
+        return voiceCommands.cancelWords.has(upperWord);
+      },
+    [voiceCommands],
   );
 
   return {

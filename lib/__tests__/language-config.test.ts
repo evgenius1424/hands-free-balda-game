@@ -1,16 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
+  getFilteredWords,
   getLanguageConfig,
-  transformWord,
-  validateWordForLanguage,
   getSpeechRecognitionLang,
-  getVoiceCommandsForLanguage,
   getSupportedLocales,
+  getVoiceCommandsForLanguage,
   isLocaleSupported,
   isWordFiltered,
+  type Locale,
   processWordWithFiltering,
-  getFilteredWords,
-  type Locale
+  transformWord,
+  validateWordForLanguage,
 } from "../language-config";
 
 describe("Language Configuration", () => {
