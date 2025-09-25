@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Popular pages for Russian Balda game
+Allow: /
+
+# Block admin/internal paths if any
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
+
+# Host
+Host: balda-game.com
