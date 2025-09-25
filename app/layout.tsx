@@ -3,6 +3,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 import { I18nProvider } from "@/lib/i18n";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "Hands-Free Balda Game",
@@ -25,6 +26,7 @@ export default function RootLayout({
   return (
     <html lang="ru">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
+        <Analytics />
         <I18nProvider>{children}</I18nProvider>
       </body>
     </html>
