@@ -8,7 +8,8 @@
       "Bash(mkdir:*)",
       "Bash(mv:*)",
       "Bash(cp:*)",
-      "Bash(./run.sh)"
+      "Bash(./run.sh)",
+      "Bash(chmod:*)"
     ],
     "deny": [],
     "ask": []
