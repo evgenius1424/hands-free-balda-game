@@ -39,9 +39,10 @@ apt update
 echo "Installing Caddy..."
 apt install -y caddy
 
-# Create Caddyfile in the server directory
+# Create Caddyfile in /etc/caddy directory (accessible by caddy user)
 echo "Creating Caddyfile..."
-cat > "$SCRIPT_DIR/Caddyfile" << 'EOF'
+mkdir -p /etc/caddy
+cat > "/etc/caddy/Caddyfile.balda" << 'EOF'
 # Caddy configuration for api.balda-game.com
 # This will automatically obtain and renew SSL certificates
 
@@ -99,8 +100,8 @@ Requires=network-online.target
 Type=notify
 User=caddy
 Group=caddy
-ExecStart=/usr/bin/caddy run --config $SCRIPT_DIR/Caddyfile --adapter caddyfile
-ExecReload=/usr/bin/caddy reload --config $SCRIPT_DIR/Caddyfile --adapter caddyfile --force
+ExecStart=/usr/bin/caddy run --config /etc/caddy/Caddyfile.balda --adapter caddyfile
+ExecReload=/usr/bin/caddy reload --config /etc/caddy/Caddyfile.balda --adapter caddyfile --force
 TimeoutStopSec=5s
 LimitNOFILE=1048576
 LimitNPROC=1048576
@@ -114,8 +115,8 @@ EOF
 
 # Give caddy user permission to read the Caddyfile
 echo "Setting permissions..."
-chown -R caddy:caddy "$SCRIPT_DIR/Caddyfile"
-chmod 644 "$SCRIPT_DIR/Caddyfile"
+chown caddy:caddy "/etc/caddy/Caddyfile.balda"
+chmod 644 "/etc/caddy/Caddyfile.balda"
 
 # Reload systemd and enable the service
 echo "Enabling Caddy service..."
@@ -160,7 +161,7 @@ case "$1" in
         ;;
     test)
         echo "Testing Caddy configuration..."
-        sudo /usr/bin/caddy validate --config $(dirname "$0")/Caddyfile --adapter caddyfile
+        sudo /usr/bin/caddy validate --config /etc/caddy/Caddyfile.balda --adapter caddyfile
         ;;
     *)
         echo "Usage: $0 {start|stop|restart|reload|status|logs|test}"
@@ -183,7 +184,7 @@ chmod +x "$SCRIPT_DIR/caddy_control.sh"
 
 # Test the configuration
 echo "Testing Caddy configuration..."
-/usr/bin/caddy validate --config "$SCRIPT_DIR/Caddyfile" --adapter caddyfile
+/usr/bin/caddy validate --config "/etc/caddy/Caddyfile.balda" --adapter caddyfile
 
 # Start the service
 echo "Starting Caddy service..."
