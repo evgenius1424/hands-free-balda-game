@@ -7,7 +7,8 @@
       "Bash(npm run build:*)",
       "Bash(mkdir:*)",
       "Bash(mv:*)",
-      "Bash(rm:*)"
+      "Bash(cp:*)",
+      "Bash(./run.sh)"
     ],
     "deny": [],
     "ask": []

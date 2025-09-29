@@ -8,7 +8,6 @@ import {
   useSpeechRecognitionConfig,
   useWordProcessor,
 } from "@/hooks/use-language-config";
-import { VoskSpeechClient, RecognitionResult } from "@/lib/audio-utils";
 
 interface SpeechRecognitionProps {
   onWordDetected: (word: string, fullText: string) => void;
@@ -20,11 +19,21 @@ interface CustomSpeechRecognitionEvent extends Event {
   resultIndex: number;
 }
 
+interface VoskRecognitionResult {
+  type: "partial" | "final";
+  text: string;
+  confidence?: number;
+  timestamp: number;
+  processing_time?: number;
+}
+
 type SpeechEngine = "webspeech" | "vosk";
 
 const USE_VOSK =
   process.env.NODE_ENV === "development" &&
   process.env.NEXT_PUBLIC_USE_VOSK === "true";
+
+const VOSK_SERVER_URL = process.env.NEXT_PUBLIC_VOSK_SERVER_URL || "ws://localhost:8000";
 
 export function SpeechRecognition({
   onWordDetected,
@@ -42,11 +51,18 @@ export function SpeechRecognition({
     USE_VOSK ? "vosk" : "webspeech",
   );
 
+  // Web Speech API refs
   const recognitionRef = useRef<SpeechRecognition | null>(null);
-  const voskClientRef = useRef<VoskSpeechClient | null>(null);
   const transcriptRef = useRef("");
   const restartTimeout = useRef<NodeJS.Timeout | null>(null);
   const silenceTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  // Vosk refs
+  const wsRef = useRef<WebSocket | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const processorRef = useRef<ScriptProcessorNode | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   const onWordDetectedRef = useRef(onWordDetected);
   useEffect(() => {
@@ -70,8 +86,28 @@ export function SpeechRecognition({
   const cleanupRecognition = useCallback(() => {
     if (speechEngine === "webspeech" && recognitionRef.current) {
       recognitionRef.current.abort();
-    } else if (speechEngine === "vosk" && voskClientRef.current) {
-      voskClientRef.current.disconnect();
+    } else if (speechEngine === "vosk") {
+      // Cleanup Vosk
+      if (processorRef.current) {
+        processorRef.current.disconnect();
+        processorRef.current = null;
+      }
+      if (sourceRef.current) {
+        sourceRef.current.disconnect();
+        sourceRef.current = null;
+      }
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+        audioContextRef.current = null;
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
     }
     setIsListening(false);
     setIsConnected(false);
@@ -93,6 +129,7 @@ export function SpeechRecognition({
     return unsubscribe;
   }, [onLanguageChange, cleanupRecognition]);
 
+  // Web Speech API implementation
   const initWebSpeech = useCallback(() => {
     const SpeechRecognitionAPI =
       (window as any).SpeechRecognition ||
@@ -189,74 +226,127 @@ export function SpeechRecognition({
     }
   }, [speechConfig.lang, extractLastWord, isActive, t]);
 
-  const initVosk = useCallback(async () => {
+  const connectToServer = useCallback(async () => {
     try {
-      const voskClient = new VoskSpeechClient();
-      voskClientRef.current = voskClient;
+      const language = locale === "ru" ? "ru" : "en";
+      const ws = new WebSocket(`${VOSK_SERVER_URL}/ws/speech/${language}`);
 
-      voskClient.onResult((result: RecognitionResult) => {
-        // @ts-ignore
-        if (result.error) {
+      ws.onopen = () => {
+        setIsConnected(true);
+        setError("");
+        console.log("Connected to speech recognition server");
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const result: VoskRecognitionResult = JSON.parse(event.data);
+
           // @ts-ignore
-          console.error("Recognition error:", result.error);
-          setError("Recognition error occurred");
-          return;
-        }
-
-        if (result.type === "partial") {
-          setTranscript(result.text);
-        } else if (result.type === "final") {
-          const finalText = result.text.trim();
-          setTranscript(finalText);
-
-          const detectedWord = extractLastWord(finalText);
-          if (detectedWord && onWordDetectedRef.current) {
-            onWordDetectedRef.current(detectedWord, finalText);
+          if (result.error) {
+            // @ts-ignore
+            console.error("Recognition error:", result.error);
+            setError("Recognition error occurred");
+            return;
           }
-        }
-      });
 
-      voskClient.onError((error) => {
-        console.error("Vosk error:", error);
-        setError("Connection error");
+          if (result.type === "partial") {
+            setTranscript(result.text);
+          } else if (result.type === "final") {
+            const finalText = result.text.trim();
+            setTranscript(finalText);
+
+            const detectedWord = extractLastWord(finalText);
+            if (detectedWord && onWordDetectedRef.current) {
+              onWordDetectedRef.current(detectedWord, finalText);
+            }
+          }
+        } catch (error) {
+          console.error("Error parsing result:", error);
+          setError("Error parsing recognition result");
+        }
+      };
+
+      ws.onclose = () => {
         setIsConnected(false);
+        console.log("Disconnected from speech recognition server");
         if (isActive) {
           scheduleRestart();
         }
-      });
+      };
 
-      const language = locale === "ru" ? "ru" : "en";
-      await voskClient.connect("ws://localhost:8000", language);
-      setIsConnected(true);
-      setError("");
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        setIsConnected(false);
+        setError("Connection error");
+        if (isActive) {
+          scheduleRestart();
+        }
+      };
 
-      if (isActive) {
-        await voskClient.startRecognition();
-        setIsListening(true);
-      }
+      wsRef.current = ws;
     } catch (error) {
-      console.error("Failed to connect to Vosk server:", error);
+      console.error("Failed to connect to server:", error);
       setError("Failed to connect to speech server");
       if (isActive) {
         scheduleRestart();
       }
     }
-  }, [locale, extractLastWord, isActive]);
+  }, [locale, isActive, extractLastWord]);
 
-  useEffect(() => {
-    if (speechEngine === "webspeech") {
-      initWebSpeech();
-      if (isActive) {
-        startListening();
+  const startVoskRecording = useCallback(async () => {
+    try {
+      if (!isConnected) {
+        setError("Not connected to server");
+        return;
       }
-    } else if (speechEngine === "vosk") {
-      initVosk();
-    }
 
-    return () => {
-      cleanupRecognition();
-    };
-  }, [isActive, speechEngine, initWebSpeech, initVosk, cleanupRecognition]);
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          sampleRate: 16000,
+          channelCount: 1,
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+
+      streamRef.current = stream;
+
+      audioContextRef.current = new AudioContext({ sampleRate: 16000 });
+      sourceRef.current =
+        audioContextRef.current.createMediaStreamSource(stream);
+
+      processorRef.current = audioContextRef.current.createScriptProcessor(
+        4096,
+        1,
+        1,
+      );
+
+      processorRef.current.onaudioprocess = (event) => {
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          const inputBuffer = event.inputBuffer.getChannelData(0);
+
+          const int16Buffer = new Int16Array(inputBuffer.length);
+          for (let i = 0; i < inputBuffer.length; i++) {
+            int16Buffer[i] = Math.max(
+              -32768,
+              Math.min(32767, inputBuffer[i] * 32767),
+            );
+          }
+
+          wsRef.current.send(int16Buffer.buffer);
+        }
+      };
+
+      sourceRef.current.connect(processorRef.current);
+      processorRef.current.connect(audioContextRef.current.destination);
+
+      setIsListening(true);
+      setError("");
+    } catch (error) {
+      console.error("Error starting recording:", error);
+      setError("Failed to start recording");
+    }
+  }, [isConnected]);
 
   const startListening = useCallback(() => {
     try {
@@ -264,12 +354,6 @@ export function SpeechRecognition({
       transcriptRef.current = "";
       if (speechEngine === "webspeech") {
         recognitionRef.current?.start();
-      } else if (
-        speechEngine === "vosk" &&
-        voskClientRef.current?.isConnected()
-      ) {
-        voskClientRef.current.startRecognition();
-        setIsListening(true);
       }
     } catch (e) {}
   }, [speechEngine]);
@@ -283,31 +367,59 @@ export function SpeechRecognition({
       if (speechEngine === "webspeech") {
         startListening();
       } else if (speechEngine === "vosk") {
-        initVosk();
+        connectToServer();
       }
     }, 2000);
-  }, [isActive, speechEngine, startListening, initVosk]);
+  }, [isActive, speechEngine, startListening, connectToServer]);
 
   useEffect(() => {
-    if (speechEngine === "webspeech") {
+    if (isActive) {
+      if (speechEngine === "webspeech") {
+        initWebSpeech();
+        startListening();
+      } else if (speechEngine === "vosk") {
+        connectToServer();
+      }
+    } else {
+      cleanupRecognition();
+      if (restartTimeout.current) {
+        clearTimeout(restartTimeout.current);
+      }
+    }
+
+    return () => {
+      cleanupRecognition();
+      if (restartTimeout.current) {
+        clearTimeout(restartTimeout.current);
+      }
+    };
+  }, [
+    isActive,
+    speechEngine,
+    initWebSpeech,
+    connectToServer,
+    cleanupRecognition,
+    startListening,
+  ]);
+
+  useEffect(() => {
+    if (speechEngine === "vosk") {
+      if (isActive && isConnected && !isListening) {
+        startVoskRecording();
+      }
+    } else if (speechEngine === "webspeech") {
       if (isActive && isConnected && !isListening) {
         startListening();
       }
-    } else if (speechEngine === "vosk") {
-      if (
-        isActive &&
-        isConnected &&
-        !isListening &&
-        voskClientRef.current?.isConnected()
-      ) {
-        voskClientRef.current.startRecognition();
-        setIsListening(true);
-      } else if (!isActive && isListening && voskClientRef.current) {
-        voskClientRef.current.stopRecognition();
-        setIsListening(false);
-      }
     }
-  }, [isActive, isConnected, isListening, speechEngine, startListening]);
+  }, [
+    isActive,
+    isConnected,
+    isListening,
+    speechEngine,
+    startVoskRecording,
+    startListening,
+  ]);
 
   return (
     <Card className="w-full max-w-md mx-auto relative">
