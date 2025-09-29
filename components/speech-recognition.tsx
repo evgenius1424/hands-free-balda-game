@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Volume2 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -8,6 +8,7 @@ import {
   useSpeechRecognitionConfig,
   useWordProcessor,
 } from "@/hooks/use-language-config";
+import { VoskSpeechClient, RecognitionResult } from "@/lib/audio-utils";
 
 interface SpeechRecognitionProps {
   onWordDetected: (word: string, fullText: string) => void;
@@ -19,18 +20,30 @@ interface CustomSpeechRecognitionEvent extends Event {
   resultIndex: number;
 }
 
+type SpeechEngine = "webspeech" | "vosk";
+
+const USE_VOSK =
+  process.env.NODE_ENV === "development" &&
+  process.env.NEXT_PUBLIC_USE_VOSK === "true";
+
 export function SpeechRecognition({
   onWordDetected,
   isActive,
 }: SpeechRecognitionProps) {
-  const { t, onLanguageChange } = useI18n();
+  console.log("Use vosk: " + USE_VOSK);
+  const { t, locale, onLanguageChange } = useI18n();
   const speechConfig = useSpeechRecognitionConfig();
   const { transformWord } = useWordProcessor();
   const [isListening, setIsListening] = useState(false);
+  const [isConnected, setIsConnected] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState("");
+  const [speechEngine] = useState<SpeechEngine>(
+    USE_VOSK ? "vosk" : "webspeech",
+  );
 
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const voskClientRef = useRef<VoskSpeechClient | null>(null);
   const transcriptRef = useRef("");
   const restartTimeout = useRef<NodeJS.Timeout | null>(null);
   const silenceTimeout = useRef<NodeJS.Timeout | null>(null);
@@ -40,26 +53,47 @@ export function SpeechRecognition({
     onWordDetectedRef.current = onWordDetected;
   }, [onWordDetected]);
 
+  const extractLastWord = useCallback(
+    (text: string) => {
+      const cleaned = text
+        .replace(/[\p{P}\p{S}]+/gu, " ")
+        .replace(/\s+/g, " ")
+        .trim();
+      if (!cleaned) return "";
+      const parts = cleaned.split(" ");
+      const lastWord = (parts[parts.length - 1] || "").toUpperCase();
+      return transformWord(lastWord);
+    },
+    [transformWord],
+  );
+
+  const cleanupRecognition = useCallback(() => {
+    if (speechEngine === "webspeech" && recognitionRef.current) {
+      recognitionRef.current.abort();
+    } else if (speechEngine === "vosk" && voskClientRef.current) {
+      voskClientRef.current.disconnect();
+    }
+    setIsListening(false);
+    setIsConnected(false);
+    setTranscript("");
+    setError("");
+    if (restartTimeout.current) {
+      clearTimeout(restartTimeout.current);
+    }
+    if (silenceTimeout.current) {
+      clearTimeout(silenceTimeout.current);
+    }
+  }, [speechEngine]);
+
   useEffect(() => {
     const unsubscribe = onLanguageChange(() => {
-      if (recognitionRef.current) {
-        recognitionRef.current.abort();
-      }
-      setIsListening(false);
-      setTranscript("");
-      setError("");
-      if (restartTimeout.current) {
-        clearTimeout(restartTimeout.current);
-      }
-      if (silenceTimeout.current) {
-        clearTimeout(silenceTimeout.current);
-      }
+      cleanupRecognition();
     });
 
     return unsubscribe;
-  }, [onLanguageChange]);
+  }, [onLanguageChange, cleanupRecognition]);
 
-  useEffect(() => {
+  const initWebSpeech = useCallback(() => {
     const SpeechRecognitionAPI =
       (window as any).SpeechRecognition ||
       (window as any).webkitSpeechRecognition;
@@ -81,24 +115,12 @@ export function SpeechRecognition({
 
       recognition.onstart = () => {
         setIsListening(true);
+        setIsConnected(true);
         setError("");
       };
 
       recognition.onresult = (event: Event) => {
         const speechEvent = event as CustomSpeechRecognitionEvent;
-
-        const extractLastWord = (text: string) => {
-          const cleaned = text
-            .replace(/[\p{P}\p{S}]+/gu, " ")
-            .replace(/\s+/g, " ")
-            .trim();
-          if (!cleaned) return "";
-          const parts = cleaned.split(" ");
-          const lastWord = (parts[parts.length - 1] || "").toUpperCase();
-          // Apply language-specific transformations
-          return transformWord(lastWord);
-        };
-
         let interimTranscript = "";
 
         for (
@@ -159,77 +181,168 @@ export function SpeechRecognition({
 
       recognition.onend = () => {
         setIsListening(false);
+        setIsConnected(false);
         if (isActive) {
           scheduleRestart();
         }
       };
+    }
+  }, [speechConfig.lang, extractLastWord, isActive, t]);
 
+  const initVosk = useCallback(async () => {
+    try {
+      const voskClient = new VoskSpeechClient();
+      voskClientRef.current = voskClient;
+
+      voskClient.onResult((result: RecognitionResult) => {
+        // @ts-ignore
+        if (result.error) {
+          // @ts-ignore
+          console.error("Recognition error:", result.error);
+          setError("Recognition error occurred");
+          return;
+        }
+
+        if (result.type === "partial") {
+          setTranscript(result.text);
+        } else if (result.type === "final") {
+          const finalText = result.text.trim();
+          setTranscript(finalText);
+
+          const detectedWord = extractLastWord(finalText);
+          if (detectedWord && onWordDetectedRef.current) {
+            onWordDetectedRef.current(detectedWord, finalText);
+          }
+        }
+      });
+
+      voskClient.onError((error) => {
+        console.error("Vosk error:", error);
+        setError("Connection error");
+        setIsConnected(false);
+        if (isActive) {
+          scheduleRestart();
+        }
+      });
+
+      const language = locale === "ru" ? "ru" : "en";
+      await voskClient.connect("ws://localhost:8000", language);
+      setIsConnected(true);
+      setError("");
+
+      if (isActive) {
+        await voskClient.startRecognition();
+        setIsListening(true);
+      }
+    } catch (error) {
+      console.error("Failed to connect to Vosk server:", error);
+      setError("Failed to connect to speech server");
+      if (isActive) {
+        scheduleRestart();
+      }
+    }
+  }, [locale, extractLastWord, isActive]);
+
+  useEffect(() => {
+    if (speechEngine === "webspeech") {
+      initWebSpeech();
       if (isActive) {
         startListening();
       }
+    } else if (speechEngine === "vosk") {
+      initVosk();
     }
 
     return () => {
-      if (recognitionRef.current) {
-        const currentRecognition = recognitionRef.current;
-        currentRecognition.onstart = null;
-        currentRecognition.onresult = null;
-        // @ts-ignore
-        currentRecognition.onspeechend = null;
-        // @ts-ignore
-        currentRecognition.onspeechstart = null;
-        currentRecognition.onerror = null;
-        currentRecognition.onend = null;
-        currentRecognition.abort();
-      }
-      if (restartTimeout.current) {
-        clearTimeout(restartTimeout.current);
-      }
-      if (silenceTimeout.current) {
-        clearTimeout(silenceTimeout.current);
-      }
+      cleanupRecognition();
     };
-  }, [isActive, speechConfig.lang, transformWord]);
+  }, [isActive, speechEngine, initWebSpeech, initVosk, cleanupRecognition]);
 
-  const startListening = () => {
+  const startListening = useCallback(() => {
     try {
       setTranscript("");
       transcriptRef.current = "";
-      recognitionRef.current?.start();
+      if (speechEngine === "webspeech") {
+        recognitionRef.current?.start();
+      } else if (
+        speechEngine === "vosk" &&
+        voskClientRef.current?.isConnected()
+      ) {
+        voskClientRef.current.startRecognition();
+        setIsListening(true);
+      }
     } catch (e) {}
-  };
+  }, [speechEngine]);
 
-  const scheduleRestart = () => {
+  const scheduleRestart = useCallback(() => {
     if (!isActive) return;
     if (restartTimeout.current) {
       clearTimeout(restartTimeout.current);
     }
     restartTimeout.current = setTimeout(() => {
-      startListening();
-    }, 500);
-  };
+      if (speechEngine === "webspeech") {
+        startListening();
+      } else if (speechEngine === "vosk") {
+        initVosk();
+      }
+    }, 2000);
+  }, [isActive, speechEngine, startListening, initVosk]);
+
+  useEffect(() => {
+    if (speechEngine === "webspeech") {
+      if (isActive && isConnected && !isListening) {
+        startListening();
+      }
+    } else if (speechEngine === "vosk") {
+      if (
+        isActive &&
+        isConnected &&
+        !isListening &&
+        voskClientRef.current?.isConnected()
+      ) {
+        voskClientRef.current.startRecognition();
+        setIsListening(true);
+      } else if (!isActive && isListening && voskClientRef.current) {
+        voskClientRef.current.stopRecognition();
+        setIsListening(false);
+      }
+    }
+  }, [isActive, isConnected, isListening, speechEngine, startListening]);
 
   return (
     <Card className="w-full max-w-md mx-auto relative">
       <CardHeader className="text-center">
         <div className="absolute right-4 top-4">
           <span
-            className={`${isActive && isListening ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground/40"} inline-block w-2.5 h-2.5 rounded-full`}
+            className={`${
+              isActive && isConnected && isListening
+                ? "bg-emerald-500 animate-pulse"
+                : isActive && isConnected
+                  ? "bg-yellow-500"
+                  : "bg-muted-foreground/40"
+            } inline-block w-2.5 h-2.5 rounded-full`}
             aria-label={
-              isActive && isListening
+              isActive && isConnected && isListening
                 ? t("common.listening")
-                : t("common.waiting")
+                : isActive && isConnected
+                  ? "Connected"
+                  : t("common.waiting")
             }
             title={
-              isActive && isListening
+              isActive && isConnected && isListening
                 ? t("common.listening")
-                : t("common.waiting")
+                : isActive && isConnected
+                  ? "Connected"
+                  : t("common.waiting")
             }
           />
         </div>
         <CardTitle className="flex items-center justify-center gap-2">
           <Volume2 className="w-5 h-5 text-primary" />
-          {t("common.voiceInput")}
+          {t("common.voiceInput")}{" "}
+          {speechEngine === "vosk" && (
+            <span className="text-xs text-muted-foreground">(Vosk)</span>
+          )}
         </CardTitle>
       </CardHeader>
 
