@@ -1,4 +1,4 @@
-export type Locale = "en" | "ru";
+import { type Locale } from "@/types/game";
 
 export interface LanguageConfig {
   /** Speech recognition language code */
@@ -424,7 +424,7 @@ export function getVoiceCommandsForLanguage(locale: Locale) {
 /**
  * Get all supported locales
  */
-export function getSupportedLocales(): Locale[] {
+export function getLocales(): Locale[] {
   return Object.keys(LANGUAGE_CONFIGS) as Locale[];
 }
 

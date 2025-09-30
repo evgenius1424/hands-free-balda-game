@@ -6,10 +6,9 @@ import {
   getSpeechRecognitionLang,
   getVoiceCommandsForLanguage,
   isWordFiltered,
-  type Locale,
   processWordWithFiltering,
   transformWord,
-  validateWordForLanguage
+  validateWordForLanguage,
 } from "@/lib/language-config";
 
 /**
@@ -18,30 +17,30 @@ import {
 export function useLanguageConfig() {
   const { locale } = useI18n();
 
-  const config = useMemo(() => getLanguageConfig(locale as Locale), [locale]);
+  const config = useMemo(() => getLanguageConfig(locale), [locale]);
 
   const speechRecognitionLang = useMemo(
-    () => getSpeechRecognitionLang(locale as Locale),
+    () => getSpeechRecognitionLang(locale),
     [locale],
   );
 
   const voiceCommands = useMemo(
-    () => getVoiceCommandsForLanguage(locale as Locale),
+    () => getVoiceCommandsForLanguage(locale),
     [locale],
   );
 
   const transformWordForCurrentLanguage = useMemo(
-    () => (word: string) => transformWord(word, locale as Locale),
+    () => (word: string) => transformWord(word, locale),
     [locale],
   );
 
   const validateWordForCurrentLanguage = useMemo(
-    () => (word: string) => validateWordForLanguage(word, locale as Locale),
+    () => (word: string) => validateWordForLanguage(word, locale),
     [locale],
   );
 
   return {
-    locale: locale as Locale,
+    locale,
     config,
     speechRecognitionLang,
     voiceCommands,
@@ -58,8 +57,8 @@ export function useSpeechRecognitionConfig() {
 
   return useMemo(
     () => ({
-      lang: getSpeechRecognitionLang(locale as Locale),
-      locale: locale as Locale,
+      lang: getSpeechRecognitionLang(locale),
+      locale: locale,
     }),
     [locale],
   );
@@ -74,8 +73,8 @@ export function useWordProcessor() {
   const processWord = useMemo(
     () =>
       (word: string): { transformedWord: string; isValid: boolean } => {
-        const transformedWord = transformWord(word, locale as Locale);
-        const isValid = validateWordForLanguage(word, locale as Locale);
+        const transformedWord = transformWord(word, locale);
+        const isValid = validateWordForLanguage(word, locale);
 
         return {
           transformedWord,
@@ -86,29 +85,26 @@ export function useWordProcessor() {
   );
 
   const processWordWithFilter = useMemo(
-    () => (word: string) => processWordWithFiltering(word, locale as Locale),
+    () => (word: string) => processWordWithFiltering(word, locale),
     [locale],
   );
 
   const transformOnly = useMemo(
-    () => (word: string) => transformWord(word, locale as Locale),
+    () => (word: string) => transformWord(word, locale),
     [locale],
   );
 
   const validateOnly = useMemo(
-    () => (word: string) => validateWordForLanguage(word, locale as Locale),
+    () => (word: string) => validateWordForLanguage(word, locale),
     [locale],
   );
 
   const isFiltered = useMemo(
-    () => (word: string) => isWordFiltered(word, locale as Locale),
+    () => (word: string) => isWordFiltered(word, locale),
     [locale],
   );
 
-  const filteredWords = useMemo(
-    () => getFilteredWords(locale as Locale),
-    [locale],
-  );
+  const filteredWords = useMemo(() => getFilteredWords(locale), [locale]);
 
   return {
     processWord,
@@ -117,7 +113,7 @@ export function useWordProcessor() {
     validateWord: validateOnly,
     isWordFiltered: isFiltered,
     filteredWords,
-    locale: locale as Locale,
+    locale: locale,
   };
 }
 
@@ -128,7 +124,7 @@ export function useVoiceCommands() {
   const { locale } = useI18n();
 
   const voiceCommands = useMemo(
-    () => getVoiceCommandsForLanguage(locale as Locale),
+    () => getVoiceCommandsForLanguage(locale),
     [locale],
   );
 
@@ -154,7 +150,7 @@ export function useVoiceCommands() {
     voiceCommands,
     parseNumber,
     isCancel,
-    locale: locale as Locale,
+    locale: locale,
   };
 }
 

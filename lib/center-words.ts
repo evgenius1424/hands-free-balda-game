@@ -1,3 +1,5 @@
+import { type Locale } from "@/types/game";
+
 const wordsCache = new Map<string, string[]>();
 
 async function loadCenterWords(locale: string): Promise<string[]> {
@@ -18,7 +20,7 @@ async function loadCenterWords(locale: string): Promise<string[]> {
 }
 
 export async function getRandomCenterWord(
-  locale: "ru" | "en" = "ru",
+  locale: Locale = "ru",
 ): Promise<string> {
   const words = await loadCenterWords(locale);
   if (words.length === 0) {

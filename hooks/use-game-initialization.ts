@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { getRandomCenterWord } from "@/lib/center-words";
-import { type GameGrid } from "@/types/game";
+import { type GameGrid, type Locale } from "@/types/game";
 
 export function useGameInitialization(
-  locale: string,
+  locale: Locale,
   isHydrated: boolean,
   onReset: () => void,
 ) {
@@ -36,7 +36,7 @@ export function useGameInitialization(
     }
   };
 
-  const handleLanguageChange = async (newLocale: string) => {
+  const handleLanguageChange = async (newLocale: Locale) => {
     const newCenterWord = await getRandomCenterWord(newLocale);
     setCenterWord(newCenterWord);
     onReset();

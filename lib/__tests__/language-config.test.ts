@@ -3,7 +3,7 @@ import {
   getFilteredWords,
   getLanguageConfig,
   getSpeechRecognitionLang,
-  getSupportedLocales,
+  getLocales,
   getVoiceCommandsForLanguage,
   isLocaleSupported,
   isWordFiltered,
@@ -86,7 +86,7 @@ describe("Language Configuration", () => {
 
   describe("utility functions", () => {
     it("should return supported locales", () => {
-      const locales = getSupportedLocales();
+      const locales = getLocales();
       expect(locales).toContain("en");
       expect(locales).toContain("ru");
     });
