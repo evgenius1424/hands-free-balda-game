@@ -1,16 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { GameBoard } from "@/components/game-board";
 import { SpeechRecognition } from "@/components/speech-recognition";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  applyWordPlacement,
-  findWordPlacements,
-  type WordPlacement,
-} from "@/lib/word-validator";
-import { getRandomCenterWord } from "@/lib/center-words";
+import { type WordPlacement } from "@/lib/word-validator";
 import { GithubIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSelector } from "@/components/language-selector";
@@ -19,88 +14,72 @@ import {
   useVoiceCommands,
   useWordProcessor,
 } from "@/hooks/use-language-config";
-import { selectOptimalPlacements } from "@/lib/optimal-placement-calculation";
+import { useGameState } from "@/hooks/use-game-state";
+import { useGameTimer } from "@/hooks/use-game-timer";
+import { useWordPlacement } from "@/hooks/use-word-placement";
+import { useGameInitialization } from "@/hooks/use-game-initialization";
 
 export default function Game() {
   const { t, locale, onLanguageChange, isHydrated } = useI18n();
   const { parseNumber, isCancel } = useVoiceCommands();
-  const { validateWord: validateWordWithLanguage, processWordWithFilter } =
-    useWordProcessor();
-  const [centerWord, setCenterWord] = useState<string>("");
-  const [isClientMounted, setIsClientMounted] = useState(false);
+  const { processWordWithFilter } = useWordProcessor();
   const isLandscape = useIsLandscape();
 
-  useEffect(() => {
-    setIsClientMounted(true);
-  }, []);
+  const { gameState, actions } = useGameState();
+  const {
+    gameGrid,
+    currentTeam,
+    teamScores,
+    isGameActive,
+    isGameOver,
+    winner,
+    currentWord,
+    isWordValid,
+    wordPlacements,
+    usedWords,
+  } = gameState;
 
-  // Initialize center word based on the current locale after hydration
-  useEffect(() => {
-    if (!centerWord && isHydrated) {
-      getRandomCenterWord(locale).then(setCenterWord);
-    }
-  }, [locale, centerWord, isHydrated]);
+  const {
+    setGameGrid,
+    setCurrentTeam,
+    setIsGameActive,
+    setCurrentWord,
+    setIsWordValid,
+    setWordPlacements,
+    setUsedWords,
+    resetGame,
+    switchTeam,
+    addScore,
+    checkGameEnd,
+  } = actions;
 
-  useEffect(() => {
-    const unsubscribe = onLanguageChange((newLocale) => {
-      getRandomCenterWord(newLocale).then((newCenterWord) => {
-        setCenterWord(newCenterWord);
-        setGameGrid(
-          Array(5)
-            .fill(null)
-            .map(() => Array(5).fill(null)),
-        );
-        setCurrentTeam(1);
-        setTeamScores({ team1: 0, team2: 0 });
-        setTimeLeft(120);
-        setIsGameActive(false);
-        setIsGameOver(false);
-        setWinner(null);
-        setCurrentWord("");
-        setIsWordValid(false);
-        setWordPlacements([]);
-        setUsedWords(new Set());
-      });
-    });
+  const {
+    centerWord,
+    isClientMounted,
+    initializeGameGrid,
+    handleLanguageChange,
+  } = useGameInitialization(locale, isHydrated, resetGame);
 
-    return unsubscribe;
-  }, [onLanguageChange]);
-
-  const [gameGrid, setGameGrid] = useState<(string | null)[][]>(() =>
-    Array(5)
-      .fill(null)
-      .map(() => Array(5).fill(null)),
-  );
-
-  const [currentTeam, setCurrentTeam] = useState<1 | 2>(1);
-  const [teamScores, setTeamScores] = useState({ team1: 0, team2: 0 });
-  const [timeLeft, setTimeLeft] = useState(120);
-  const [isGameActive, setIsGameActive] = useState(false);
-  const [isGameOver, setIsGameOver] = useState(false);
-  const [winner, setWinner] = useState<1 | 2 | "draw" | null>(null);
-
-  const [currentWord, setCurrentWord] = useState("");
-  const [isWordValid, setIsWordValid] = useState(false);
-  const [wordPlacements, setWordPlacements] = useState<WordPlacement[]>([]);
-  const [usedWords, setUsedWords] = useState<Set<string>>(new Set());
-
-  useEffect(() => {
-    if (centerWord) {
-      const grid = Array(5)
-        .fill(null)
-        .map(() => Array(5).fill(null));
-      const letters = centerWord.split("");
-      letters.forEach((letter, index) => (grid[2][index] = letter));
-      setGameGrid(grid);
-      setUsedWords(new Set([centerWord]));
-    }
-  }, [centerWord]);
+  const { processWordForPlacements, handlePlacementSelect } =
+    useWordPlacement();
 
   const handleTimerEnd = () => {
     setCurrentWord("");
     setWordPlacements([]);
-    setCurrentTeam(currentTeam === 1 ? 2 : 1);
+    switchTeam();
   };
+
+  const { timeLeft, resetTimer, formatTime } = useGameTimer(
+    isGameActive,
+    handleTimerEnd,
+  );
+
+  useEffect(
+    () => initializeGameGrid(centerWord, setGameGrid, setUsedWords),
+    [centerWord],
+  );
+
+  useEffect(() => onLanguageChange(handleLanguageChange), [onLanguageChange]);
 
   const startGame = () => {
     if (isGameActive) {
@@ -108,24 +87,9 @@ export default function Game() {
       return;
     }
     setIsGameActive(true);
-    setIsGameOver(false);
-    setWinner(null);
+    actions.setIsGameOver(false);
+    actions.setWinner(null);
   };
-
-  useEffect(() => {
-    if (!isGameActive) return;
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          handleTimerEnd();
-          return 120;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isGameActive, currentTeam]);
 
   const handleWordDetected = (word: string) => {
     const upperWord = word.toUpperCase().trim();
@@ -142,7 +106,7 @@ export default function Game() {
       if (idx >= 0 && idx < wordPlacements.length) {
         const placement = wordPlacements[idx];
         if (placement.word === currentWord) {
-          handlePlacementSelect(placement);
+          handlePlacementSelectWrapper(placement);
         }
         return;
       }
@@ -168,41 +132,30 @@ export default function Game() {
     setCurrentWord(transformedWord);
 
     if (isValid) {
-      const placementsRaw = findWordPlacements(transformedWord, gameGrid);
-      const placements = selectOptimalPlacements(placementsRaw, gameGrid);
+      const placements = processWordForPlacements(transformedWord, gameGrid);
       setWordPlacements(placements);
     }
   };
 
-  const handlePlacementSelect = (placement: WordPlacement) => {
-    const newGrid = applyWordPlacement(gameGrid, placement);
-
-    const points = placement.word.length;
-    const newScores =
-      currentTeam === 1
-        ? { ...teamScores, team1: teamScores.team1 + points }
-        : { ...teamScores, team2: teamScores.team2 + points };
-
-    setGameGrid(newGrid);
-    setTeamScores(newScores);
-    setUsedWords((prev) => new Set([...prev, placement.word]));
+  const handlePlacementSelectWrapper = (placement: WordPlacement) => {
+    const gameEnded = handlePlacementSelect(
+      placement,
+      gameGrid,
+      setGameGrid,
+      (points: number) => {
+        const newScores = addScore(points);
+        return checkGameEnd(gameGrid, newScores);
+      },
+      (word) => setUsedWords((prev) => new Set([...prev, word])),
+    );
 
     setCurrentWord("");
     setWordPlacements([]);
 
-    const isFull = newGrid.every((row) => row.every((cell) => cell !== null));
-    if (isFull) {
-      setIsGameActive(false);
-      setIsGameOver(true);
-      if (newScores.team1 > newScores.team2) setWinner(1);
-      else if (newScores.team2 > newScores.team1) setWinner(2);
-      else setWinner("draw");
-      return;
+    if (!gameEnded) {
+      switchTeam();
+      resetTimer();
     }
-
-    // Otherwise continue to next team
-    setCurrentTeam(currentTeam === 1 ? 2 : 1);
-    setTimeLeft(120);
   };
 
   const handleWordReject = () => {
@@ -247,12 +200,6 @@ export default function Game() {
       </div>
     );
   }
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
 
   return (
     <div className="min-h-screen bg-background p-4">
@@ -331,7 +278,7 @@ export default function Game() {
                   grid={gameGrid}
                   isActive={isGameActive}
                   placementHints={wordPlacements}
-                  onHintSelect={handlePlacementSelect}
+                  onHintSelect={handlePlacementSelectWrapper}
                   centerWord={centerWord}
                 />
               </Card>
@@ -399,7 +346,7 @@ export default function Game() {
                 grid={gameGrid}
                 isActive={isGameActive}
                 placementHints={wordPlacements}
-                onHintSelect={handlePlacementSelect}
+                onHintSelect={handlePlacementSelectWrapper}
                 centerWord={centerWord}
               />
             </Card>
