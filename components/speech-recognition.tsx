@@ -33,7 +33,8 @@ const USE_VOSK =
   process.env.NODE_ENV === "development" &&
   process.env.NEXT_PUBLIC_USE_VOSK === "true";
 
-const VOSK_SERVER_URL = process.env.NEXT_PUBLIC_VOSK_SERVER_URL || "ws://localhost:8000";
+const VOSK_SERVER_URL =
+  process.env.NEXT_PUBLIC_VOSK_SERVER_URL || "ws://localhost:8000";
 
 export function SpeechRecognition({
   onWordDetected,
@@ -451,10 +452,7 @@ export function SpeechRecognition({
         </div>
         <CardTitle className="flex items-center justify-center gap-2">
           <Volume2 className="w-5 h-5 text-primary" />
-          {t("common.voiceInput")}{" "}
-          {speechEngine === "vosk" && (
-            <span className="text-xs text-muted-foreground">(Vosk)</span>
-          )}
+          {t("common.voiceInput")}
         </CardTitle>
       </CardHeader>
 
