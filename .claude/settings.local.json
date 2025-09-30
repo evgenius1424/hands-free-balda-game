@@ -14,7 +14,11 @@
       "Bash(vercel env ls:*)",
       "Bash(vercel inspect:*)",
       "Bash(cat:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(vercel env pull:*)",
+      "Bash(vercel env rm:*)",
+      "Bash(vercel env add:*)",
+      "Bash(vercel:*)"
     ],
     "deny": [],
     "ask": []

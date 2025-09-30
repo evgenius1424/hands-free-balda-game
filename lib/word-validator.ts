@@ -212,10 +212,4 @@ export class BaldaGame {
     if (!s) return s;
     return s.toUpperCase().trim();
   }
-
-  public boardToString(): string {
-    return this.board
-      .map((row) => row.map((ch) => ch || ".").join(" "))
-      .join("\n");
-  }
 }
