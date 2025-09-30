@@ -29,9 +29,7 @@ interface VoskRecognitionResult {
 
 type SpeechEngine = "webspeech" | "vosk";
 
-const USE_VOSK =
-  process.env.NODE_ENV === "development" &&
-  process.env.NEXT_PUBLIC_USE_VOSK === "true";
+const USE_VOSK = process.env.NEXT_PUBLIC_USE_VOSK === "true";
 
 const VOSK_SERVER_URL =
   process.env.NEXT_PUBLIC_VOSK_SERVER_URL || "ws://localhost:8000";
