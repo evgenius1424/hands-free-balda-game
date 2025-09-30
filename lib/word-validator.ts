@@ -1,3 +1,6 @@
+import { Locale } from "@/types/game";
+import { transformWord, validateWordForLanguage } from "./language-config";
+
 export interface Cell {
   r: number;
   c: number;
@@ -9,9 +12,6 @@ export interface WordPlacement {
   newLetter: string;
   path: Cell[];
 }
-
-import type { Locale } from "./language-config";
-import { transformWord, validateWordForLanguage } from "./language-config";
 
 /**
  * Legacy validation function - now delegates to language-aware validation
