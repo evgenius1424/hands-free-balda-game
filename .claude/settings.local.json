@@ -9,7 +9,12 @@
       "Bash(mv:*)",
       "Bash(cp:*)",
       "Bash(./run.sh)",
-      "Bash(chmod:*)"
+      "Bash(chmod:*)",
+      "Bash(vercel ls:*)",
+      "Bash(vercel env ls:*)",
+      "Bash(vercel inspect:*)",
+      "Bash(cat:*)",
+      "Bash(npm run dev:*)"
     ],
     "deny": [],
     "ask": []

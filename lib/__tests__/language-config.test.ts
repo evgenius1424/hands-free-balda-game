@@ -2,12 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   getFilteredWords,
   getLanguageConfig,
-  getSpeechRecognitionLang,
   getLocales,
+  getSpeechRecognitionLang,
   getVoiceCommandsForLanguage,
   isLocaleSupported,
   isWordFiltered,
-  type Locale,
   processWordWithFiltering,
   transformWord,
   validateWordForLanguage,
