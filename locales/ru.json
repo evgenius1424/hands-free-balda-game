@@ -20,6 +20,7 @@
     "pressStart": "Нажмите старт для начала игры",
     "teamTurn": "Ход команды {num}",
     "language": "Язык",
-    "selectLanguage": "Выберите язык"
+    "selectLanguage": "Выберите язык",
+    "switchingLanguage": "Переключение языка..."
   }
 }

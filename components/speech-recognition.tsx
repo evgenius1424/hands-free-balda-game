@@ -46,6 +46,7 @@ export function SpeechRecognition({
   const [isConnected, setIsConnected] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState("");
+  const [isLanguageSwitching, setIsLanguageSwitching] = useState(false);
   const [speechEngine] = useState<SpeechEngine>(
     USE_VOSK ? "vosk" : "webspeech",
   );
@@ -121,11 +122,16 @@ export function SpeechRecognition({
   }, [speechEngine]);
 
   useEffect(() => {
-    const unsubscribe = onLanguageChange(() => {
+    return onLanguageChange(() => {
+      setIsLanguageSwitching(true);
+      setError("");
       cleanupRecognition();
-    });
 
-    return unsubscribe;
+      // Reset language switching state after a delay to allow reconnection
+      setTimeout(() => {
+        setIsLanguageSwitching(false);
+      }, 3000);
+    });
   }, [onLanguageChange, cleanupRecognition]);
 
   // Web Speech API implementation
@@ -268,7 +274,7 @@ export function SpeechRecognition({
       ws.onclose = () => {
         setIsConnected(false);
         console.log("Disconnected from speech recognition server");
-        if (isActive) {
+        if (isActive && !isLanguageSwitching) {
           scheduleRestart();
         }
       };
@@ -276,8 +282,10 @@ export function SpeechRecognition({
       ws.onerror = (error) => {
         console.error("WebSocket error:", error);
         setIsConnected(false);
-        setError("Connection error");
-        if (isActive) {
+        if (!isLanguageSwitching) {
+          setError("Connection error");
+        }
+        if (isActive && !isLanguageSwitching) {
           scheduleRestart();
         }
       };
@@ -285,12 +293,14 @@ export function SpeechRecognition({
       wsRef.current = ws;
     } catch (error) {
       console.error("Failed to connect to server:", error);
-      setError("Failed to connect to speech server");
-      if (isActive) {
+      if (!isLanguageSwitching) {
+        setError("Failed to connect to speech server");
+      }
+      if (isActive && !isLanguageSwitching) {
         scheduleRestart();
       }
     }
-  }, [locale, isActive, extractLastWord]);
+  }, [locale, isActive, isLanguageSwitching, extractLastWord]);
 
   const startVoskRecording = useCallback(async () => {
     try {
@@ -343,9 +353,11 @@ export function SpeechRecognition({
       setError("");
     } catch (error) {
       console.error("Error starting recording:", error);
-      setError("Failed to start recording");
+      if (!isLanguageSwitching) {
+        setError("Failed to start recording");
+      }
     }
-  }, [isConnected]);
+  }, [isConnected, isLanguageSwitching]);
 
   const startListening = useCallback(() => {
     try {
@@ -358,7 +370,7 @@ export function SpeechRecognition({
   }, [speechEngine]);
 
   const scheduleRestart = useCallback(() => {
-    if (!isActive) return;
+    if (!isActive || isLanguageSwitching) return;
     if (restartTimeout.current) {
       clearTimeout(restartTimeout.current);
     }
@@ -369,7 +381,7 @@ export function SpeechRecognition({
         connectToServer();
       }
     }, 2000);
-  }, [isActive, speechEngine, startListening, connectToServer]);
+  }, [isActive, isLanguageSwitching, speechEngine, startListening, connectToServer]);
 
   useEffect(() => {
     if (isActive) {
@@ -464,9 +476,15 @@ export function SpeechRecognition({
           </div>
         </div>
 
-        {error && (
+        {error && !isLanguageSwitching && (
           <div className="p-3 bg-destructive/10 rounded-lg border border-destructive/20">
             <div className="text-sm text-destructive">{error}</div>
+          </div>
+        )}
+
+        {isLanguageSwitching && (
+          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="text-sm text-blue-700">{t("common.switchingLanguage")}</div>
           </div>
         )}
       </CardContent>

@@ -20,6 +20,7 @@
     "pressStart": "Press start to begin the game",
     "teamTurn": "Team {num}'s turn",
     "language": "Language",
-    "selectLanguage": "Select language"
+    "selectLanguage": "Select language",
+    "switchingLanguage": "Switching language..."
   }
 }
