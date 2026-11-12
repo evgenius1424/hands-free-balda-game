@@ -56,3 +56,6 @@
   .timer-row { border: 0; padding: 0; gap: 10px; }
   .timer-caption { font-size: 8px; }
 }
+.auto-confirm { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; color: #688696; font-size: 12px; cursor: pointer; }
+.auto-confirm input { width: 15px; height: 15px; accent-color: #356f95; }
+@media (max-width: 760px) { .auto-confirm { margin-bottom: 8px; font-size: 11px; } }
