@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export function useGameTimer(
   isGameActive: boolean,
@@ -6,6 +6,8 @@ export function useGameTimer(
   initialTime = 120,
 ) {
   const [timeLeft, setTimeLeft] = useState(initialTime);
+  const onTimerEndRef = useRef(onTimerEnd);
+  onTimerEndRef.current = onTimerEnd;
 
   useEffect(() => {
     if (!isGameActive) return;
@@ -13,7 +15,7 @@ export function useGameTimer(
     const interval = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
-          onTimerEnd();
+          onTimerEndRef.current();
           return initialTime;
         }
         return prev - 1;
@@ -21,7 +23,7 @@ export function useGameTimer(
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isGameActive, onTimerEnd, initialTime]);
+  }, [isGameActive, initialTime]);
 
   const resetTimer = () => {
     setTimeLeft(initialTime);

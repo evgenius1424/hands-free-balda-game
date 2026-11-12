@@ -1,400 +1,66 @@
 "use client";
 
-import { useEffect } from "react";
-import { GameBoard } from "@/components/game-board";
+import { useEffect, useState } from "react";
+import { ArrowRight, Pause, Play, RotateCcw, Sparkles } from "lucide-react";
 import { SpeechRecognition } from "@/components/speech-recognition";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { type WordPlacement } from "@/lib/word-validator";
-import { GithubIcon } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { LanguageSelector } from "@/components/language-selector";
-import { useIsLandscape } from "@/hooks/use-is-landscape";
-import {
-  useVoiceCommands,
-  useWordProcessor,
-} from "@/hooks/use-language-config";
+import { useVoiceCommands, useWordProcessor } from "@/hooks/use-language-config";
 import { useGameState } from "@/hooks/use-game-state";
 import { useGameTimer } from "@/hooks/use-game-timer";
 import { useWordPlacement } from "@/hooks/use-word-placement";
 import { useGameInitialization } from "@/hooks/use-game-initialization";
+import { type WordPlacement } from "@/lib/word-validator";
 
 export default function Game() {
-  const { t, locale, onLanguageChange, isHydrated } = useI18n();
+  const { locale, setLocale, isHydrated, onLanguageChange } = useI18n();
+  const ru = locale === "ru";
   const { parseNumber, isCancel } = useVoiceCommands();
-  const { processWordWithFilter } = useWordProcessor();
-  const isLandscape = useIsLandscape();
+  const { processWord, processWordWithFilter } = useWordProcessor();
+  const { gameState: s, actions: a } = useGameState();
+  const { centerWord, isClientMounted, initializeGameGrid, handleLanguageChange, setCenterWord } = useGameInitialization(locale, isHydrated, a.resetGame);
+  const { processWordForPlacements, handlePlacementSelect } = useWordPlacement();
+  const [input, setInput] = useState("");
+  const [notice, setNotice] = useState("");
+  const [showRules, setShowRules] = useState(false);
+  const { timeLeft, resetTimer, formatTime } = useGameTimer(s.isGameActive, () => { a.setCurrentWord(""); a.setWordPlacements([]); a.switchTeam(); setNotice(ru ? "Время вышло. Ход другой команды." : "Time’s up. Next team’s turn."); });
+  useEffect(() => initializeGameGrid(centerWord, a.setGameGrid, a.setUsedWords), [centerWord]);
+  useEffect(() => onLanguageChange((l) => { handleLanguageChange(l); resetTimer(); setInput(""); setNotice(""); }), [onLanguageChange]);
 
-  const { gameState, actions } = useGameState();
-  const {
-    gameGrid,
-    currentTeam,
-    teamScores,
-    isGameActive,
-    isGameOver,
-    winner,
-    currentWord,
-    isWordValid,
-    wordPlacements,
-    usedWords,
-  } = gameState;
-
-  const {
-    setGameGrid,
-    setCurrentTeam,
-    setIsGameActive,
-    setCurrentWord,
-    setIsWordValid,
-    setWordPlacements,
-    setUsedWords,
-    resetGame,
-    switchTeam,
-    addScore,
-    checkGameEnd,
-  } = actions;
-
-  const {
-    centerWord,
-    isClientMounted,
-    initializeGameGrid,
-    handleLanguageChange,
-  } = useGameInitialization(locale, isHydrated, resetGame);
-
-  const { processWordForPlacements, handlePlacementSelect } =
-    useWordPlacement();
-
-  const handleTimerEnd = () => {
-    setCurrentWord("");
-    setWordPlacements([]);
-    switchTeam();
-  };
-
-  const { timeLeft, resetTimer, formatTime } = useGameTimer(
-    isGameActive,
-    handleTimerEnd,
-  );
-
-  useEffect(
-    () => initializeGameGrid(centerWord, setGameGrid, setUsedWords),
-    [centerWord],
-  );
-
-  useEffect(() => onLanguageChange(handleLanguageChange), [onLanguageChange]);
-
-  const startGame = () => {
-    if (isGameActive) {
-      setIsGameActive(false);
-      return;
-    }
-    setIsGameActive(true);
-    actions.setIsGameOver(false);
-    actions.setWinner(null);
-  };
-
-  const handleWordDetected = (word: string) => {
-    const upperWord = word.toUpperCase().trim();
-
-    if (isCancel(upperWord)) {
-      handleWordReject();
-      return;
-    }
-
-    const numberValue = parseNumber(upperWord);
-
-    if (numberValue !== null && wordPlacements.length > 0 && currentWord) {
-      const idx = numberValue - 1; // convert to 0-based (ignoring 0)
-      if (idx >= 0 && idx < wordPlacements.length) {
-        const placement = wordPlacements[idx];
-        if (placement.word === currentWord) {
-          handlePlacementSelectWrapper(placement);
-        }
-        return;
-      }
-    }
-
-    // Process word with filtering - ignore common words like "ДА"
-    const processedWord = processWordWithFilter(upperWord);
-    if (!processedWord) {
-      // Word was filtered out, ignore it silently
-      return;
-    }
-
-    const { transformedWord, isValid } = processedWord;
-
-    if (usedWords.has(transformedWord)) {
-      return;
-    }
-
-    setIsWordValid(isValid);
-
-    // Clear previous placements immediately when processing a new word
-    setWordPlacements([]);
-    setCurrentWord(transformedWord);
-
-    if (isValid) {
-      const placements = processWordForPlacements(transformedWord, gameGrid);
-      setWordPlacements(placements);
-    }
-  };
-
-  const handlePlacementSelectWrapper = (placement: WordPlacement) => {
-    const gameEnded = handlePlacementSelect(
-      placement,
-      gameGrid,
-      setGameGrid,
-      (points: number) => {
-        const newScores = addScore(points);
-        return checkGameEnd(gameGrid, newScores);
-      },
-      (word) => setUsedWords((prev) => new Set([...prev, word])),
-    );
-
-    setCurrentWord("");
-    setWordPlacements([]);
-
-    if (!gameEnded) {
-      switchTeam();
-      resetTimer();
-    }
-  };
-
-  const handleWordReject = () => {
-    setCurrentWord("");
-    setWordPlacements([]);
-  };
-
-  const headerComponent = (
-    <div className="relative flex items-center justify-start sm:justify-center mb-4">
-      <h1 className="text-3xl md:text-4xl font-bold text-primary">
-        {t("common.title")}
-      </h1>
-      <div className="absolute right-0 top-1/2 -translate-y-1/2 flex items-center gap-2">
-        <a
-          href="https://github.com/evgenius1424/hands-free-balda-game"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={t("common.openGithub")}
-          title={t("common.openGithub")}
-        >
-          <Button variant="ghost" size="icon" className="h-9 w-9">
-            <GithubIcon className="h-5 w-5" />
-          </Button>
-        </a>
-        <LanguageSelector />
-      </div>
-    </div>
-  );
-
-  if (!isClientMounted || !isHydrated || !centerWord) {
-    return (
-      <div className="min-h-screen bg-background p-4">
-        <div className="max-w-6xl mx-auto space-y-8">
-          {isHydrated && (
-            <div className="relative flex items-center justify-start sm:justify-center mb-4">
-              <h1 className="text-3xl md:text-4xl font-bold text-primary">
-                {t("common.title")}
-              </h1>
-            </div>
-          )}
-        </div>
-      </div>
-    );
+  function choose(placement: WordPlacement) {
+    if (!s.isGameActive) return;
+    const ended = handlePlacementSelect(placement, s.gameGrid, a.setGameGrid, (points) => a.checkGameEnd(s.gameGrid.map((row, r) => row.map((cell, c) => r === placement.newLetterPos.r && c === placement.newLetterPos.c ? placement.newLetter : cell)), a.addScore(points)), word => a.setUsedWords(prev => new Set([...prev, word])));
+    a.setCurrentWord(""); a.setWordPlacements([]); setInput(""); setNotice(ru ? `«${placement.word}» · +${placement.word.length} очков` : `${placement.word} · +${placement.word.length} points`);
+    if (!ended) { a.switchTeam(); resetTimer(); }
   }
-
-  return (
-    <div className="min-h-screen bg-background p-4">
-      <div
-        className={`${isLandscape ? "w-fit" : "max-w-[1400px]"} mx-auto space-y-6`}
-      >
-        {headerComponent}
-
-        {!isLandscape && (
-          <>
-            <Card className="px-3 py-2">
-              <div className="flex items-center justify-between gap-3 h-12">
-                <div className="flex items-center gap-2 min-w-0">
-                  <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-xs">
-                    1
-                  </span>
-                  <span className="text-xl font-bold text-primary tabular-nums leading-none">
-                    {teamScores.team1}
-                  </span>
-                  <span
-                    className={`${currentTeam === 1 ? "bg-accent animate-pulse" : "bg-muted-foreground/40"} inline-block w-2.5 h-2.5 rounded-full`}
-                    aria-label={
-                      currentTeam === 1
-                        ? t("common.teamTurn", { num: 1 })
-                        : t("common.waiting")
-                    }
-                    title={
-                      currentTeam === 1
-                        ? t("common.teamTurn", { num: 1 })
-                        : t("common.waiting")
-                    }
-                  />
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="text-2xl font-bold text-primary tabular-nums leading-none min-w-[5ch] text-center">
-                    {formatTime(timeLeft)}
-                  </div>
-                  <Button
-                    onClick={startGame}
-                    size="sm"
-                    variant={isGameActive ? "secondary" : "default"}
-                    className="h-8 px-3 shrink-0"
-                  >
-                    {isGameActive ? "II" : "▶"}
-                  </Button>
-                </div>
-
-                <div className="flex items-center gap-2 min-w-0">
-                  <span
-                    className={`${currentTeam === 2 ? "bg-accent animate-pulse" : "bg-muted-foreground/40"} inline-block w-2.5 h-2.5 rounded-full`}
-                    aria-label={
-                      currentTeam === 2
-                        ? t("common.teamTurn", { num: 2 })
-                        : t("common.waiting")
-                    }
-                    title={
-                      currentTeam === 2
-                        ? t("common.teamTurn", { num: 2 })
-                        : t("common.waiting")
-                    }
-                  />
-                  <span className="text-xl font-bold text-primary tabular-nums leading-none">
-                    {teamScores.team2}
-                  </span>
-                  <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-xs">
-                    2
-                  </span>
-                </div>
-              </div>
-            </Card>
-
-            <div className="flex justify-center">
-              <Card className="p-4 md:p-6 shadow-lg">
-                <GameBoard
-                  grid={gameGrid}
-                  isActive={isGameActive}
-                  placementHints={wordPlacements}
-                  onHintSelect={handlePlacementSelectWrapper}
-                  centerWord={centerWord}
-                />
-              </Card>
-            </div>
-
-            <div className="max-w-2xl mx-auto">
-              <SpeechRecognition
-                onWordDetected={handleWordDetected}
-                isActive={isGameActive && currentTeam !== null}
-              />
-            </div>
-          </>
-        )}
-
-        {isLandscape && (
-          <div className="flex justify-center items-start gap-6 md:gap-10">
-            {/* Left panel: Team 1 + Timer */}
-            <div className="flex flex-col gap-4 w-48 md:w-56 lg:w-64">
-              <Card className="p-4">
-                <div className="flex flex-col items-center space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-sm">
-                      1
-                    </span>
-                    <span className="text-lg font-semibold">
-                      {t("common.teamLabel", { num: 1 })}
-                    </span>
-                  </div>
-                  <div className="text-4xl font-bold text-primary">
-                    {teamScores.team1}
-                  </div>
-                  <span
-                    className={`text-xs px-2 py-1 rounded border ${
-                      currentTeam === 1
-                        ? "bg-accent text-accent-foreground animate-pulse"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {currentTeam === 1
-                      ? t("common.yourTurn")
-                      : t("common.waiting")}
-                  </span>
-                </div>
-              </Card>
-
-              <Card className="px-4 py-2">
-                <div className="flex w-full items-center justify-between gap-4 h-12 md:h-14">
-                  <div className="text-3xl md:text-4xl font-bold text-primary tabular-nums leading-none">
-                    {formatTime(timeLeft)}
-                  </div>
-                  <Button
-                    onClick={startGame}
-                    size="default"
-                    variant={isGameActive ? "secondary" : "default"}
-                    className="flex items-center gap-2 shrink-0 h-10 md:h-11 px-4 md:px-5"
-                  >
-                    {isGameActive ? t("common.pause") : t("common.start")}
-                  </Button>
-                </div>
-              </Card>
-            </div>
-
-            <Card className="p-3 md:p-4 lg:p-6 shadow-lg">
-              <GameBoard
-                grid={gameGrid}
-                isActive={isGameActive}
-                placementHints={wordPlacements}
-                onHintSelect={handlePlacementSelectWrapper}
-                centerWord={centerWord}
-              />
-            </Card>
-
-            <div className="flex flex-col gap-4 w-48 md:w-56 lg:w-64">
-              <Card className="p-4">
-                <div className="flex flex-col items-center space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground w-6 h-6 text-sm">
-                      2
-                    </span>
-                    <span className="text-lg font-semibold">
-                      {t("common.teamLabel", { num: 2 })}
-                    </span>
-                  </div>
-                  <div className="text-4xl font-bold text-primary">
-                    {teamScores.team2}
-                  </div>
-                  <span
-                    className={`text-xs px-2 py-1 rounded border ${
-                      currentTeam === 2
-                        ? "bg-accent text-accent-foreground animate-pulse"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {currentTeam === 2
-                      ? t("common.yourTurn")
-                      : t("common.waiting")}
-                  </span>
-                </div>
-              </Card>
-
-              <SpeechRecognition
-                onWordDetected={handleWordDetected}
-                isActive={isGameActive && currentTeam !== null}
-              />
-            </div>
-          </div>
-        )}
-
-        <div className="max-w-4xl mx-auto">
-          <Card className="p-4 bg-muted">
-            <p className="text-sm md:text-base text-muted-foreground text-center">
-              {t("common.instructions")}
-            </p>
-          </Card>
-        </div>
-      </div>
-    </div>
-  );
+  function submitWord(word: string, voice = false) {
+    if (!s.isGameActive) return;
+    const upper = word.toUpperCase().trim();
+    if (isCancel(upper)) { a.setCurrentWord(""); a.setWordPlacements([]); setNotice(""); return; }
+    const num = parseNumber(upper);
+    if (num !== null && s.wordPlacements.length) { const p = s.wordPlacements[num - 1]; if (p) choose(p); return; }
+    const processed = voice ? processWordWithFilter(upper) : processWord(upper);
+    if (!processed) return;
+    const { transformedWord, isValid } = processed;
+    a.setCurrentWord(transformedWord); a.setWordPlacements([]);
+    if (s.usedWords.has(transformedWord)) { setNotice(ru ? "Это слово уже было." : "That word has already been used."); return; }
+    if (!isValid) { setNotice(ru ? "Введите слово из двух или более букв." : "Enter a word with at least two letters."); return; }
+    const placements = processWordForPlacements(transformedWord, s.gameGrid);
+    a.setWordPlacements(placements);
+    setNotice(placements.length ? (ru ? "Выберите клетку или скажите её номер." : "Choose a tile or say its number.") : (ru ? "Не удалось составить это слово на поле." : "That word can’t be formed on this board."));
+  }
+  async function newGame() {
+    const { getRandomCenterWord } = await import("@/lib/center-words");
+    const word = await getRandomCenterWord(locale);
+    a.resetGame(); resetTimer(); setInput(""); setNotice("");
+    if (word === centerWord) initializeGameGrid(word, a.setGameGrid, a.setUsedWords); else setCenterWord(word);
+  }
+  if (!isClientMounted || !isHydrated || !centerWord) return <main className="loading">LONGER<span>·</span></main>;
+  const hints = new Map<string, { p: WordPlacement; index: number }>();
+  s.wordPlacements.forEach((p, index) => { const key = `${p.newLetterPos.r},${p.newLetterPos.c}`; if (!hints.has(key)) hints.set(key, { p, index: index + 1 }); });
+  return <main className="app-shell"><header className="topbar"><div className="brand"><div className="brand-mark">L<span>·</span></div><div><div className="brand-name">{ru ? "БАЛДА" : "LONGER"}</div><div className="brand-sub">{ru ? "ИГРА В СЛОВА" : "THE WORD GAME"}</div></div></div><div className="top-actions"><button className="text-button rules-toggle" onClick={() => setShowRules(!showRules)}>{ru ? "Как играть" : "How to play"}</button><button className="language-button" onClick={() => setLocale(ru ? "en" : "ru")} aria-label={ru ? "Switch to English" : "Переключить на русский"}>{ru ? "RU" : "EN"}<span>⌄</span></button></div></header>
+  <section className="intro"><div><div className="eyebrow"><span/> {ru ? "ИГРАЙТЕ ВМЕСТЕ" : "A LITTLE GAME FOR TWO"}</div><h1>{ru ? "Слова становятся длиннее." : <>Good words.<br/><em>Better together.</em></>}</h1><p>{ru ? "Добавьте букву. Найдите слово. Передайте ход." : "Add a letter. Find a word. Pass it on."}</p></div><div className="intro-note"><Sparkles size={16}/><span>{ru ? "Немного времени для игры" : "A little time well spent"}</span></div></section>
+  {showRules && <div className="rules"><strong>{ru ? "Как играть" : "How to play"}</strong><p>{ru ? "По очереди называйте слова, добавляя ровно одну букву. Буквы должны соединяться по горизонтали или вертикали, без повторного использования клетки. Выберите вариант на поле или назовите его номер. За каждую букву — очко. Игроки сами решают, существует ли слово." : "Take turns making words by adding exactly one letter. Letters must connect horizontally or vertically, without reusing a tile. Choose a numbered tile or say its number. Score one point per letter. Players decide together whether a word is valid."}</p></div>}
+  <div className="game-layout"><section className="board-section"><div className="section-top"><div><div className="section-kicker">{ru ? "ИГРОВОЕ ПОЛЕ" : "THE BOARD"}</div><h2>{ru ? "Найдите следующее слово" : "Find your next word"}</h2></div><button className="icon-button" onClick={newGame} title={ru ? "Новая игра" : "New game"} aria-label={ru ? "Новая игра" : "New game"}><RotateCcw size={18}/></button></div><div className="board-wrap"><div className="board" aria-label={ru ? "Игровое поле" : "Game board"}>{s.gameGrid.map((row,r) => row.map((cell,c) => { const hint = hints.get(`${r},${c}`); return <button key={`${r},${c}`} className={`tile ${cell ? "filled" : ""} ${hint ? "hint" : ""}`} disabled={!s.isGameActive || !hint} onClick={() => hint && choose(hint.p)} aria-label={hint ? `${hint.p.newLetter}, ${hint.index}` : cell || (ru ? "Пустая клетка" : "Empty tile")}>{cell || hint?.p.newLetter || ""}{hint && <span className="hint-number">{hint.index}</span>}</button>; }))}</div></div><div className="board-footer"><span>{ru ? "НАЧАЛЬНОЕ СЛОВО" : "STARTING WORD"} <strong>{centerWord}</strong></span><span>5 × 5</span></div></section>
+  <aside className="side-panel"><div className="score-card"><div className="side-heading"><span>{ru ? "СЧЁТ" : "THE SCORE"}</span><span className="round-tag">{ru ? "ИГРА НА ДВОИХ" : "TWO TEAMS"}</span></div><div className="scores"><div className={`team ${s.currentTeam === 1 ? "current" : ""}`}><div className="team-label"><i/>{ru ? "Команда 1" : "Team one"}</div><strong>{s.teamScores.team1}</strong><small>{s.currentTeam === 1 ? (ru ? "ВАШ ХОД" : "YOUR TURN") : "\u00a0"}</small></div><div className="score-divider">:</div><div className={`team ${s.currentTeam === 2 ? "current" : ""}`}><div className="team-label"><i/>{ru ? "Команда 2" : "Team two"}</div><strong>{s.teamScores.team2}</strong><small>{s.currentTeam === 2 ? (ru ? "ВАШ ХОД" : "YOUR TURN") : "\u00a0"}</small></div></div><div className="timer-row"><div><div className="timer-caption">{ru ? "ВРЕМЯ ХОДА" : "TIME REMAINING"}</div><div className="timer">{formatTime(timeLeft)}</div></div><button className="play-button" onClick={() => { if (!s.isGameOver) a.setIsGameActive(!s.isGameActive); }} disabled={s.isGameOver}>{s.isGameActive ? <Pause size={16} fill="currentColor"/> : <Play size={16} fill="currentColor"/>}{s.isGameActive ? (ru ? "Пауза" : "Pause") : (ru ? "Начать" : "Start game")}</button></div></div>
+  <div className="input-card"><div className="side-heading"><span>{ru ? "ВАШЕ СЛОВО" : "YOUR NEXT WORD"}</span><span className="number-label">01 / 02</span></div><SpeechRecognition isActive={s.isGameActive} onWordDetected={(word) => submitWord(word, true)}/><div className="input-divider"><span>{ru ? "ИЛИ ВВЕДИТЕ" : "OR TYPE IT IN"}</span></div><form className="word-form" onSubmit={e => {e.preventDefault(); submitWord(input);}}><input value={input} onChange={e => setInput(e.target.value)} placeholder={ru ? "Введите слово..." : "Type a word..."} aria-label={ru ? "Введите слово" : "Enter a word"} disabled={!s.isGameActive}/><button disabled={!s.isGameActive || !input.trim()} aria-label={ru ? "Найти слово" : "Find word"}><ArrowRight size={19}/></button></form><div className="feedback" aria-live="polite">{s.isGameOver ? (s.winner === "draw" ? (ru ? "Ничья!" : "It’s a draw!") : (ru ? `Победила команда ${s.winner}!` : `Team ${s.winner} wins!`)) : notice || (ru ? "Сначала начните игру." : "Start the game when you’re ready.")}</div></div><div className="side-note">✳ <span>{ru ? "Хорошая игра начинается с одного слова." : "A good game starts with a single word."}</span></div></aside></div><footer><span>LONGER <span className="footer-dot">·</span> {ru ? "ИГРАЙТЕ ВМЕСТЕ" : "MADE FOR PLAYING TOGETHER"}</span><button onClick={() => setShowRules(!showRules)}>{ru ? "Правила игры" : "The rules"} ↗</button></footer></main>;
 }
